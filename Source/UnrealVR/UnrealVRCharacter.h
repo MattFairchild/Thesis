@@ -17,6 +17,9 @@ class AUnrealVRCharacter : public ACharacter
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FirstPersonCameraComponent;
+
+	AActor* pickup;
+	float hitDistance;
 public:
 	AUnrealVRCharacter();
 
@@ -42,6 +45,7 @@ protected:
 	void MoveRight(float Val);
 
 	void leftClick();
+	void rightClick();
 
 	/**
 	 * Called via input to turn at a given rate.
@@ -66,5 +70,7 @@ public:
 	/** Returns FirstPersonCameraComponent subobject **/
 	FORCEINLINE class UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
+	//ticks every frame
+	void Tick(float DeltaTime) override;
 };
 

@@ -8,11 +8,11 @@
 AShape::AShape()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	RootComponent = CreateDefaultSubobject <USceneComponent>(TEXT("RootThing"));
 
-	mesh = CreateDefaultSubobject <UStaticMeshComponent>(TEXT("MEsh Component"));
+	mesh = CreateDefaultSubobject <UStaticMeshComponent>(TEXT("Shape's generated Mesh Component"));
 	mesh->AttachTo(RootComponent);
 }
 
@@ -22,11 +22,3 @@ void AShape::BeginPlay()
 	Super::BeginPlay();
 	
 }
-
-// Called every frame
-void AShape::Tick( float DeltaTime )
-{
-	Super::Tick( DeltaTime );
-
-}
-

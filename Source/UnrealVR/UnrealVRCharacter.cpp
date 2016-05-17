@@ -16,6 +16,10 @@ DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
 AUnrealVRCharacter::AUnrealVRCharacter()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
+	pickup = nullptr;
+
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 
@@ -59,6 +63,7 @@ void AUnrealVRCharacter::SetupPlayerInputComponent(class UInputComponent* InputC
 	InputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	InputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 	InputComponent->BindAction("LeftClick", IE_Pressed, this, &AUnrealVRCharacter::leftClick);
+	InputComponent->BindAction("RightClick", IE_Pressed, this, &AUnrealVRCharacter::rightClick);
 
 	InputComponent->BindAxis("MoveForward", this, &AUnrealVRCharacter::MoveForward);
 	InputComponent->BindAxis("MoveRight", this, &AUnrealVRCharacter::MoveRight);
@@ -123,10 +128,42 @@ void AUnrealVRCharacter::leftClick()
 	if(hasHit)
 	{
 		GetWorld()->SpawnActor<AShape>(shapeBP, hit.Location, this->GetActorRotation());
+		
+		AActor* actor = hit.GetActor();
+		UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(actor->GetRootComponent());
+		if (comp)
+		{
+			comp->SetSimulatePhysics(false);		
+			hitDistance = hit.Distance;
+			pickup = actor;
+		}
+
 	}
 
 	DrawDebugLine(camera->GetWorld(), loc, hit.Location, FColor(1.0f, 0.f, 0.f, 1.f), false, 10.f, 0, 2.0f);
 
 	FVector location = hit.GetActor()->GetActorLocation();
 	UE_LOG(LogFPChar, Warning, TEXT("Hit Character wit name \"%s\" at loca is %d, %d, %d"), (hasHit ? *hit.GetComponent()->GetName() : TEXT("NO hit")), location.X, location.Y, location.Z);
+}
+
+void AUnrealVRCharacter::rightClick()
+{
+	if (pickup)
+	{
+		pickup->DetachRootComponentFromParent();
+		UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(pickup->GetRootComponent());
+		comp->SetSimulatePhysics(true);
+		pickup = nullptr;
+	}
+}
+
+void AUnrealVRCharacter::Tick(float DeltaTime)
+{
+	if (pickup)
+	{
+		UCameraComponent* cam = this->GetFirstPersonCameraComponent();
+		FVector location = cam->GetComponentLocation() + (cam->GetForwardVector() * hitDistance);
+		pickup->SetActorRotation(cam->GetComponentRotation());
+		pickup->SetActorLocation(location);
+	}
 }
