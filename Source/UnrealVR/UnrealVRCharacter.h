@@ -18,8 +18,18 @@ class AUnrealVRCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FirstPersonCameraComponent;
 
-	AActor* pickup;
+	UPROPERTY()
+	AActor *inHand;
+
+	UPROPERTY()
+	AActor *inFocus;
+
+	UPROPERTY()
+	AActor *previous;
+	
+	bool bZoomingIn;
 	float hitDistance;
+	float ZoomFactor;
 public:
 	AUnrealVRCharacter();
 
@@ -45,7 +55,28 @@ protected:
 	void MoveRight(float Val);
 
 	void leftClick();
-	void rightClick();
+	void ZoomIn();
+	void ZoomOut();
+	void mouseWheelUp();
+	void mouseWheelDown();
+	void changeInHandColor();
+
+	AActor* currentlyInFocus(bool onlyIfMovable = false);
+
+	//check for objects in focus and set the highlight accordingly
+	void higlightObject();
+
+	//turn the highlight of a specific actor on or off
+	void highlight(AActor* actor, bool highlightOn);
+
+	//pick the passed object up
+	void pickupObject(AActor* actor);
+
+	//drop the object in the players hand, if he has one
+	void releaseObject();
+
+	//dont be able to pick up object if we are too close -> weird behaviour
+	bool tooCloseToObject();
 
 	/**
 	 * Called via input to turn at a given rate.

@@ -18,7 +18,8 @@ AUnrealVRCharacter::AUnrealVRCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	pickup = nullptr;
+	inHand = nullptr;
+	previous = nullptr;
 
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
@@ -63,7 +64,12 @@ void AUnrealVRCharacter::SetupPlayerInputComponent(class UInputComponent* InputC
 	InputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	InputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 	InputComponent->BindAction("LeftClick", IE_Pressed, this, &AUnrealVRCharacter::leftClick);
-	InputComponent->BindAction("RightClick", IE_Pressed, this, &AUnrealVRCharacter::rightClick);
+	InputComponent->BindAction("RightClick", IE_Pressed, this, &AUnrealVRCharacter::ZoomIn);
+	InputComponent->BindAction("RightClick", IE_Released, this, &AUnrealVRCharacter::ZoomOut);
+
+	InputComponent->BindAction("MouseWheelUp", IE_Pressed, this, &AUnrealVRCharacter::mouseWheelUp);
+	InputComponent->BindAction("MouseWheelDown", IE_Pressed, this, &AUnrealVRCharacter::mouseWheelDown);
+	InputComponent->BindAction("ChangeColor", IE_Pressed, this, &AUnrealVRCharacter::changeInHandColor);
 
 	InputComponent->BindAxis("MoveForward", this, &AUnrealVRCharacter::MoveForward);
 	InputComponent->BindAxis("MoveRight", this, &AUnrealVRCharacter::MoveRight);
@@ -109,61 +115,230 @@ void AUnrealVRCharacter::LookUpAtRate(float Rate)
 
 void AUnrealVRCharacter::leftClick()
 {
-	auto player = UGameplayStatics::GetPlayerController(this, 0);
-	int x, y;
-	player->GetViewportSize(x, y);
+	AActor* actor = currentlyInFocus(true);
 
-	UE_LOG(LogFPChar, Warning, TEXT("GetViewport size X. %d, Y: %d"), x, y);
-
-	FHitResult hit;
-	FCollisionQueryParams CombatCollisionQuery(FName(TEXT("CombatTrace")), true, NULL);
-
-	UCameraComponent* camera = this->GetFirstPersonCameraComponent();
-
-	FVector loc = camera->GetComponentLocation();
-
-	FVector2D center(x * 0.5f, y * 0.5f);
-	bool hasHit = player->GetHitResultAtScreenPosition(center, ECollisionChannel::ECC_Visibility, CombatCollisionQuery, hit);
-
-	if(hasHit)
+	if (actor && !inHand)
 	{
-		GetWorld()->SpawnActor<AShape>(shapeBP, hit.Location, this->GetActorRotation());
-		
-		AActor* actor = hit.GetActor();
-		UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(actor->GetRootComponent());
-		if (comp)
-		{
-			comp->SetSimulatePhysics(false);		
-			hitDistance = hit.Distance;
-			pickup = actor;
-		}
-
+		pickupObject(actor);
 	}
-
-	DrawDebugLine(camera->GetWorld(), loc, hit.Location, FColor(1.0f, 0.f, 0.f, 1.f), false, 10.f, 0, 2.0f);
-
-	FVector location = hit.GetActor()->GetActorLocation();
-	UE_LOG(LogFPChar, Warning, TEXT("Hit Character wit name \"%s\" at loca is %d, %d, %d"), (hasHit ? *hit.GetComponent()->GetName() : TEXT("NO hit")), location.X, location.Y, location.Z);
-}
-
-void AUnrealVRCharacter::rightClick()
-{
-	if (pickup)
+	else if (inHand)
 	{
-		pickup->DetachRootComponentFromParent();
-		UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(pickup->GetRootComponent());
-		comp->SetSimulatePhysics(true);
-		pickup = nullptr;
+		releaseObject();
 	}
 }
 
 void AUnrealVRCharacter::Tick(float DeltaTime)
 {
-	if (pickup)
+	//Zoom in if ZoomIn button is down, zoom back out if it's not
+	{
+		if (bZoomingIn)
+		{
+			ZoomFactor += DeltaTime / 0.5f;         //Zoom in over half a second
+		}
+		else
+		{
+			ZoomFactor -= DeltaTime / 0.25f;        //Zoom out over a quarter of a second
+		}
+		ZoomFactor = FMath::Clamp<float>(ZoomFactor, 0.0f, 1.0f);
+		//Blend our camera's FOV and our SpringArm's length based on ZoomFactor
+		this->GetFirstPersonCameraComponent()->FieldOfView = FMath::Lerp<float>(90.0f, 60.0f, ZoomFactor);
+	}
+
+
+	if (inHand)
 	{
 		UCameraComponent* cam = this->GetFirstPersonCameraComponent();
 		FVector location = cam->GetComponentLocation() + (cam->GetForwardVector() * hitDistance);
-		pickup->SetActorRotation(cam->GetComponentRotation());
-		pickup->SetActorLocation(location);
+		inHand->SetActorLocation(location);
+	}
+	else
+	{
+		higlightObject();
+	}
+}
+
+AActor* AUnrealVRCharacter::currentlyInFocus(bool onlyIfMovable)
+{
+	//if the player is holding something currently, then we don't need to check
+	if (inHand)
+		return nullptr;
+
+
+	auto player = UGameplayStatics::GetPlayerController(this, 0);
+
+	FHitResult hit(ForceInit);
+	FCollisionQueryParams CombatCollisionQuery(FName(TEXT("CombatTrace")), true, this);
+	CombatCollisionQuery.bTraceAsyncScene = true;
+	CombatCollisionQuery.bReturnPhysicalMaterial = true;
+
+	FVector pos;
+	FRotator rot;
+	player->GetPlayerViewPoint(pos, rot);
+
+	FVector direction = rot.Vector();
+	FVector endTrace = pos + direction * 65000.0f;
+
+	bool hasHit = GetWorld()->LineTraceSingleByChannel(hit, pos, endTrace, ECC_GameTraceChannel1, CombatCollisionQuery);
+
+	if (hasHit)
+	{
+		AActor* actor = hit.GetActor();
+		bool moveable = false;
+		hitDistance = hit.Distance;
+
+		//RETURNING ONLY STATICMESHES AT THE MOMENT, COULD BE ANY OTHER SCRIPT
+		//get the mobility of the object if it has a staticmesh
+		UStaticMeshComponent* mesh = Cast<UStaticMeshComponent>(actor->GetRootComponent());
+		if (mesh)
+		{
+			FVector location = hit.GetActor()->GetActorLocation();
+
+			if(actor != inFocus)
+				UE_LOG(LogFPChar, Warning, TEXT("Hit Character wit name \"%s\" at loca is %d, %d, %d"), (hasHit ? *hit.GetComponent()->GetName() : TEXT("NO hit")), location.X, location.Y, location.Z);
+
+			moveable = (mesh->Mobility == EComponentMobility::Movable);
+
+			if (onlyIfMovable)
+			{
+				//if I only want to get moveable meshes, then return according to the mobility of the object
+				return (moveable ? actor : nullptr);
+			}
+			else
+			{
+				return actor;
+			}
+		}
+	}
+
+	//if no hit, then return nullptr
+	return nullptr;
+}
+
+
+void AUnrealVRCharacter::higlightObject()
+{
+	inFocus = currentlyInFocus();
+
+
+	/* We have 3 cases:
+		1. there is no "previous" actor, so we just started off
+		2. current actor we are looking at is the same as in last frame
+		3. we are looking at a new actor (compared to last frame)
+	*/
+
+	//we set the outline effect through "SetRenderCustomDepth" if it is a moveable object we can pick up
+	if (previous == nullptr)
+	{
+		highlight(inFocus, true);
+		previous = inFocus;
+	}
+	//if we are looking at the object inHand, we can disregard this (when picking up item we will always have in in the focus)
+	else if (inFocus == previous)
+	{
+		return;
+	}
+	else
+	{
+		if (previous)
+		{
+			highlight(previous, false);
+		}
+
+		//only if we have an actual object in Focus
+		if (inFocus)
+		{
+			UStaticMeshComponent* currentmesh = Cast<UStaticMeshComponent>(inFocus->GetRootComponent());
+			if (currentmesh)
+			{
+				if (currentmesh->Mobility == EComponentMobility::Movable)
+					currentmesh->SetRenderCustomDepth(true);
+			}
+
+			previous = inFocus;
+		}
+	}
+}
+
+void AUnrealVRCharacter::ZoomIn()
+{
+	bZoomingIn = true;
+}
+
+void AUnrealVRCharacter::ZoomOut()
+{
+	bZoomingIn = false;
+}
+
+void AUnrealVRCharacter::mouseWheelUp()
+{
+	if (!inHand)
+		return;
+
+	hitDistance += 10.0f;
+	FMath::Clamp<float>(hitDistance, 200.0f, 5000.0f);
+}
+
+void AUnrealVRCharacter::mouseWheelDown()
+{
+	if (!inHand)
+		return;
+
+	hitDistance -= 10.0f;
+	FMath::Clamp<float>(hitDistance, 200.0f, 5000.0f);
+}
+
+void AUnrealVRCharacter::changeInHandColor()
+{
+	if (inHand)
+	{
+		AShape* shape = Cast<AShape>(inHand);
+		if (shape)
+		{
+			shape->switchColors();
+		}
+	}
+}
+
+void AUnrealVRCharacter::pickupObject(AActor* actor)
+{
+	//dont be able to pick up object if we are too close -> weird behaviour
+	if (tooCloseToObject())
+	{
+		return;
+	}
+
+	//turn highlight on actor off
+	highlight(actor, false);
+
+	//attach, if it has the right component and is moveable: turn off physics and assign the inHand variable
+	UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(actor->GetRootComponent());
+	if (comp)
+	{
+		comp->SetSimulatePhysics(false);
+		inHand = actor;
+	}
+}
+
+void AUnrealVRCharacter::releaseObject()
+{
+	highlight(inHand, false);
+
+	inHand->DetachRootComponentFromParent();
+	UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(inHand->GetRootComponent());
+	comp->SetSimulatePhysics(true);
+	inHand = nullptr;
+}
+
+bool AUnrealVRCharacter::tooCloseToObject()
+{
+	return (hitDistance < 200.0f);
+}
+
+void AUnrealVRCharacter::highlight(AActor* actor, bool highlightOn)
+{
+	UStaticMeshComponent* mesh = Cast<UStaticMeshComponent>(actor->GetRootComponent());
+	if (mesh)
+	{
+		mesh->SetRenderCustomDepth(highlightOn);
 	}
 }

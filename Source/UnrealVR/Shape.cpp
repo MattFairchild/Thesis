@@ -3,22 +3,37 @@
 #include "UnrealVR.h"
 #include "Shape.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
 // Sets default values
-AShape::AShape()
+AShape::AShape(const class FObjectInitializer &PCIP) : Super(PCIP)
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
-
-	RootComponent = CreateDefaultSubobject <USceneComponent>(TEXT("RootThing"));
-
-	mesh = CreateDefaultSubobject <UStaticMeshComponent>(TEXT("Shape's generated Mesh Component"));
-	mesh->AttachTo(RootComponent);
+	SetMobility(EComponentMobility::Movable);	
 }
 
-// Called when the game starts or when spawned
 void AShape::BeginPlay()
 {
+	// Call the base class  
 	Super::BeginPlay();
-	
+
+	//have physics starting
+	UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(this->GetRootComponent());
+	if (comp)
+	{
+		comp->SetSimulatePhysics(true);
+	}
+
+	currentMat = 0;
+	//Set material
+	if (mats.Num() > 0)
+	{
+		this->GetStaticMeshComponent()->SetMaterial(0, mats[currentMat]);
+	}
+
+}
+
+void AShape::switchColors()
+{
+	currentMat = (currentMat + 1) % mats.Num();
+	this->GetStaticMeshComponent()->SetMaterial(0, mats[currentMat]);
 }

@@ -3,22 +3,24 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "Engine/StaticMeshActor.h"
 #include "Shape.generated.h"
 
+
 UCLASS()
-class UNREALVR_API AShape : public AActor
+class UNREALVR_API AShape : public AStaticMeshActor
 {
 	GENERATED_BODY()
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Color")
+	TArray<UMaterialInterface*> mats;
 
-	UPROPERTY(EditAnywhere, Category = "Shape")
-	USceneComponent* mesh;
-
+	int currentMat;
 public:	
 	// Sets default values for this actor's properties
-	AShape();
+	AShape(const class FObjectInitializer &PCIP);
 
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	virtual void BeginPlay();
 
+	void switchColors();
 };
