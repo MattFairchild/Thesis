@@ -14,12 +14,13 @@ DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 //////////////////////////////////////////////////////////////////////////
 // AUnrealVRCharacter
 
-AUnrealVRCharacter::AUnrealVRCharacter()
+AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
 	inHand = nullptr;
 	previous = nullptr;
+	openMenu = nullptr;
 
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
@@ -166,7 +167,6 @@ AActor* AUnrealVRCharacter::currentlyInFocus(bool onlyIfMovable)
 
 	auto player = UGameplayStatics::GetPlayerController(this, 0);
 
-	FHitResult hit(ForceInit);
 	FCollisionQueryParams CombatCollisionQuery(FName(TEXT("CombatTrace")), true, this);
 	CombatCollisionQuery.bTraceAsyncScene = true;
 	CombatCollisionQuery.bReturnPhysicalMaterial = true;
@@ -306,6 +306,12 @@ void AUnrealVRCharacter::pickupObject(AActor* actor)
 	{
 		return;
 	}
+
+	//if we already have a menu open, destroy it first
+	if(openMenu)
+		openMenu->Destroy();
+
+	openMenu = GetWorld()->SpawnActor<AActor>(widget, hit.Location, this->GetActorRotation());
 
 	//turn highlight on actor off
 	highlight(actor, false);

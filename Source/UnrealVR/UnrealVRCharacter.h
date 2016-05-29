@@ -30,6 +30,9 @@ class AUnrealVRCharacter : public ACharacter
 	bool bZoomingIn;
 	float hitDistance;
 	float ZoomFactor;
+	FHitResult hit;
+
+	AActor* openMenu;
 public:
 	AUnrealVRCharacter();
 
@@ -43,9 +46,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
 
-
-	UPROPERTY(EditAnywhere, Category = "ShapeSpawning")
-	TSubclassOf<class AShape> shapeBP;
+	UPROPERTY(EditAnywhere, Category = "Widget Spawning")
+	TSubclassOf<class AActor> widget;
 
 protected:
 	/** Handles moving forward/backward */
