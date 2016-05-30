@@ -311,7 +311,9 @@ void AUnrealVRCharacter::pickupObject(AActor* actor)
 	if(openMenu)
 		openMenu->Destroy();
 
-	openMenu = GetWorld()->SpawnActor<AActor>(widget, hit.Location, this->GetActorRotation());
+	FRotator rotation = this->GetActorRotation();
+	rotation.Yaw += 180.0f;
+	openMenu = GetWorld()->SpawnActor<AActor>(widget, hit.Location, rotation);
 
 	//turn highlight on actor off
 	highlight(actor, false);
