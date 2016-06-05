@@ -154,7 +154,7 @@ void AUnrealVRCharacter::Tick(float DeltaTime)
 	}
 	else
 	{
-		higlightObject();
+		//higlightObject();
 	}
 }
 

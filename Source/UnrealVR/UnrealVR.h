@@ -3,7 +3,8 @@
 #ifndef __UNREALVR_H__
 #define __UNREALVR_H__
 
-#include "EngineMinimal.h"
+#include "Engine.h"
+#include "UnrealNetwork.h"
 #include "Runtime/UMG/Public/UMG.h"
 #include "Runtime/UMG/Public/UMGStyle.h"
 #include "Runtime/UMG/Public/Slate/SObjectWidget.h"

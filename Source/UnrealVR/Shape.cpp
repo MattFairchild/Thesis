@@ -8,7 +8,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 // Sets default values
 AShape::AShape(const class FObjectInitializer &PCIP) : Super(PCIP)
 {
-	SetMobility(EComponentMobility::Movable);	
+	SetMobility(EComponentMobility::Movable);
 }
 
 void AShape::BeginPlay()
