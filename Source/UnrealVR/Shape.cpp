@@ -9,6 +9,10 @@ DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 AShape::AShape(const class FObjectInitializer &PCIP) : Super(PCIP)
 {
 	SetMobility(EComponentMobility::Movable);
+
+	bReplicates = true;
+	bStaticMeshReplicateMovement = true;
+	bReplicateMovement = true;
 }
 
 void AShape::BeginPlay()
@@ -32,8 +36,40 @@ void AShape::BeginPlay()
 
 }
 
-void AShape::switchColors()
+void AShape::switchColors_Implementation()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("This is called on the server"));
 	currentMat = (currentMat + 1) % mats.Num();
+	
+	//needs to be called manually,s ince in C++ the server does not call the RepNotify function automatically
+	UpdateMaterial();
+}
+
+bool AShape::switchColors_Validate()
+{
+	return true;
+}
+
+
+void AShape::UpdateMaterial()
+{
 	this->GetStaticMeshComponent()->SetMaterial(0, mats[currentMat]);
+}
+
+
+void AShape::setShapePosition_Implementation(FVector location)
+{
+	this->SetActorLocation(location);
+}
+
+bool AShape::setShapePosition_Validate(FVector location)
+{
+	return true;
+}
+
+void AShape::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	// Here we list the variables we want to replicate + a condition if wanted DOREPLIFETIME(ATestPlayerCharacter, Health);
+
+	DOREPLIFETIME(AShape, currentMat);
 }

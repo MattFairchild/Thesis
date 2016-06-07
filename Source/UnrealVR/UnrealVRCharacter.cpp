@@ -150,7 +150,17 @@ void AUnrealVRCharacter::Tick(float DeltaTime)
 	{
 		UCameraComponent* cam = this->GetFirstPersonCameraComponent();
 		FVector location = cam->GetComponentLocation() + (cam->GetForwardVector() * hitDistance);
-		inHand->SetActorLocation(location);
+		
+		AShape* shape = Cast<AShape>(inHand);
+		if (shape)
+		{
+			shape->setShapePosition(location);
+		}
+		else
+		{
+			inHand->SetActorLocation(location);
+		}
+		
 	}
 	else
 	{

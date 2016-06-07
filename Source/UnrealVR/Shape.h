@@ -4,6 +4,8 @@
 
 #include "GameFramework/Actor.h"
 #include "Engine/StaticMeshActor.h"
+#include "Engine.h"
+#include "NET/UnrealNetwork.h"
 #include "Shape.generated.h"
 
 
@@ -13,8 +15,10 @@ class UNREALVR_API AShape : public AStaticMeshActor
 	GENERATED_BODY()
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Color")
+
 	TArray<UMaterialInterface*> mats;
 
+	UPROPERTY(ReplicatedUsing=UpdateMaterial)
 	int currentMat;
 public:	
 	// Sets default values for this actor's properties
@@ -22,5 +26,16 @@ public:
 
 	virtual void BeginPlay();
 
+	UFUNCTION(Reliable, Server, WithValidation)
+	void setShapePosition(FVector location);
+
+	UFUNCTION(Reliable, Server, WithValidation)
 	void switchColors();
+
+	UFUNCTION()
+	void UpdateMaterial();
+
+
+
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 };
