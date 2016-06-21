@@ -5,7 +5,6 @@
 #include "Engine/Canvas.h"
 #include "TextureResource.h"
 #include "CanvasItem.h"
-#include <Private/GameplayDebugger/AIModuleBasicGameplayDebuggerObject.h>
 
 AUnrealVRHUD::AUnrealVRHUD()
 {

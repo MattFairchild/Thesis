@@ -49,6 +49,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Widget Spawning")
 	TSubclassOf<class AActor> widget;
 
+	UPROPERTY(EditAnywhere, Category = "Widget Spawning")
+	TSubclassOf<class AActor> spawnThing;
+
 protected:
 	/** Handles moving forward/backward */
 	void MoveForward(float Val);
@@ -56,6 +59,7 @@ protected:
 	/** Handles stafing movement, left and right */
 	void MoveRight(float Val);
 
+	void spawnObject();
 	void leftClick();
 	void ZoomIn();
 	void ZoomOut();
@@ -102,6 +106,14 @@ public:
 	FORCEINLINE class USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
 	/** Returns FirstPersonCameraComponent subobject **/
 	FORCEINLINE class UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+
+
+	//RPCs
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_SpawnObject(FVector location);
+
+	UFUNCTION(Unreliable, NetMulticast)
+	void Multicast_SpawnObject(FVector location);
 
 	//ticks every frame
 	void Tick(float DeltaTime) override;

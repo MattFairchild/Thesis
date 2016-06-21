@@ -6,7 +6,6 @@
 #include "Shape.h"
 #include "Animation/AnimInstance.h"
 #include "GameFramework/InputSettings.h"
-#include <Private/GameplayDebugger/AIModuleBasicGameplayDebuggerObject.h>
 #include "UnrealVRHUD.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
@@ -71,6 +70,7 @@ void AUnrealVRCharacter::SetupPlayerInputComponent(class UInputComponent* InputC
 	InputComponent->BindAction("MouseWheelUp", IE_Pressed, this, &AUnrealVRCharacter::mouseWheelUp);
 	InputComponent->BindAction("MouseWheelDown", IE_Pressed, this, &AUnrealVRCharacter::mouseWheelDown);
 	InputComponent->BindAction("ChangeColor", IE_Pressed, this, &AUnrealVRCharacter::changeInHandColor);
+	InputComponent->BindAction("Spawn", IE_Pressed, this, &AUnrealVRCharacter::spawnObject);
 
 	InputComponent->BindAxis("MoveForward", this, &AUnrealVRCharacter::MoveForward);
 	InputComponent->BindAxis("MoveRight", this, &AUnrealVRCharacter::MoveRight);
@@ -126,6 +126,12 @@ void AUnrealVRCharacter::leftClick()
 	{
 		releaseObject();
 	}
+}
+
+void AUnrealVRCharacter::spawnObject()
+{
+	currentlyInFocus();
+	Server_SpawnObject(hit.Location);
 }
 
 void AUnrealVRCharacter::Tick(float DeltaTime)
@@ -197,7 +203,7 @@ AActor* AUnrealVRCharacter::currentlyInFocus(bool onlyIfMovable)
 		hitDistance = hit.Distance;
 
 		//RETURNING ONLY STATICMESHES AT THE MOMENT, COULD BE ANY OTHER SCRIPT
-		//get the mobility of the object if it has a staticmesh
+		//get the mobility of the object if it has a static mesh
 		UStaticMeshComponent* mesh = Cast<UStaticMeshComponent>(actor->GetRootComponent());
 		if (mesh)
 		{
@@ -359,4 +365,22 @@ void AUnrealVRCharacter::highlight(AActor* actor, bool highlightOn)
 	{
 		mesh->SetRenderCustomDepth(highlightOn);
 	}
+}
+
+
+void AUnrealVRCharacter::Server_SpawnObject_Implementation(FVector location)
+{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Server spawn called"));
+		Multicast_SpawnObject(location);
+}
+
+bool AUnrealVRCharacter::Server_SpawnObject_Validate(FVector location)
+{
+	return true;
+}
+
+void AUnrealVRCharacter::Multicast_SpawnObject_Implementation(FVector location)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Multicast"));
+	GetWorld()->SpawnActor<AActor>(spawnThing, location, GetActorRotation());
 }

@@ -41,7 +41,7 @@ void AShape::switchColors_Implementation()
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("This is called on the server"));
 	currentMat = (currentMat + 1) % mats.Num();
 	
-	//needs to be called manually,s ince in C++ the server does not call the RepNotify function automatically
+	//needs to be called manually,since in C++ the server does not call the RepNotify function automatically
 	UpdateMaterial();
 }
 
