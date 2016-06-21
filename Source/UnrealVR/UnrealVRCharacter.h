@@ -107,14 +107,6 @@ public:
 	/** Returns FirstPersonCameraComponent subobject **/
 	FORCEINLINE class UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
-
-	//RPCs
-	UFUNCTION(Reliable, Server, WithValidation)
-	void Server_SpawnObject(FVector location);
-
-	UFUNCTION(Unreliable, NetMulticast)
-	void Multicast_SpawnObject(FVector location);
-
 	//ticks every frame
 	void Tick(float DeltaTime) override;
 };

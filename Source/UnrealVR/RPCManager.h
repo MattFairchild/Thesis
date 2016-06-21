@@ -3,13 +3,18 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "SpawnActor.h"
 #include "RPCManager.generated.h"
 
 UCLASS()
 class UNREALVR_API ARPCManager : public AActor
 {
 	GENERATED_BODY()
-	
+
+private:
+	UPROPERTY()
+	TSubclassOf<ASpawnActor> spawn;
+
 public:	
 	// Sets default values for this actor's properties
 	ARPCManager();

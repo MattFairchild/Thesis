@@ -11,9 +11,10 @@ ASpawnActor::ASpawnActor()
 	PrimaryActorTick.bCanEverTick = false;
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> StaticMeshOb(TEXT("StaticMesh'/Game/StarterContent/Shapes/Shape_QuadPyramid.Shape_QuadPyramid'"));
 	
+	mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpawnableMesh)"));
+
 	if (StaticMeshOb.Succeeded())
 	{
-		mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpawnableMesh)"));
 		mesh->SetStaticMesh(StaticMeshOb.Object);
 	}
 }

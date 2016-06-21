@@ -9,14 +9,13 @@ ARPCManager::ARPCManager()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
+	spawn = ASpawnActor::StaticClass();
 }
 
 // Called when the game starts or when spawned
 void ARPCManager::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
@@ -43,4 +42,5 @@ bool ARPCManager::Server_SpawnObject_Validate(FVector location)
 void ARPCManager::Multicast_SpawnObject_Implementation(FVector location)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Multicast"));
+	GetWorld()->SpawnActor <ASpawnActor>(spawn, location, GetActorRotation());
 }

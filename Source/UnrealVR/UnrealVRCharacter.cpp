@@ -131,7 +131,6 @@ void AUnrealVRCharacter::leftClick()
 void AUnrealVRCharacter::spawnObject()
 {
 	currentlyInFocus();
-	Server_SpawnObject(hit.Location);
 }
 
 void AUnrealVRCharacter::Tick(float DeltaTime)
@@ -365,22 +364,4 @@ void AUnrealVRCharacter::highlight(AActor* actor, bool highlightOn)
 	{
 		mesh->SetRenderCustomDepth(highlightOn);
 	}
-}
-
-
-void AUnrealVRCharacter::Server_SpawnObject_Implementation(FVector location)
-{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Server spawn called"));
-		Multicast_SpawnObject(location);
-}
-
-bool AUnrealVRCharacter::Server_SpawnObject_Validate(FVector location)
-{
-	return true;
-}
-
-void AUnrealVRCharacter::Multicast_SpawnObject_Implementation(FVector location)
-{
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Multicast"));
-	GetWorld()->SpawnActor<AActor>(spawnThing, location, GetActorRotation());
 }
