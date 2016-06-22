@@ -43,14 +43,15 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	Mesh1P->RelativeRotation = FRotator(1.9f, -19.19f, 5.2f);
 	Mesh1P->RelativeLocation = FVector(-0.5f, -4.4f, -155.7f);
 
-	// Note: The ProjectileClass and the skeletal mesh/anim blueprints for Mesh1P are set in the
-	// derived blueprint asset named MyCharacter (to avoid direct content references in C++)
 }
 
 void AUnrealVRCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
+
+	rpc = GetWorld()->SpawnActor<ARPCManager>(ARPCManager::StaticClass());
+	rpc->AttachRootComponentTo(this->RootComponent);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -58,7 +59,7 @@ void AUnrealVRCharacter::BeginPlay()
 
 void AUnrealVRCharacter::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 {
-	// set up gameplay key bindings
+	// set up game play key bindings
 	check(InputComponent);
 
 	InputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
@@ -131,6 +132,8 @@ void AUnrealVRCharacter::leftClick()
 void AUnrealVRCharacter::spawnObject()
 {
 	currentlyInFocus();
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Spawn Object called"));
+	rpc->Server_SpawnObject(hit.Location);
 }
 
 void AUnrealVRCharacter::Tick(float DeltaTime)

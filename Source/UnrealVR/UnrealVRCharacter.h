@@ -1,6 +1,7 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 #pragma once
 #include "GameFramework/Character.h"
+#include "RPCManager.h"
 #include "UnrealVRCharacter.generated.h"
 
 class UInputComponent;
@@ -51,6 +52,8 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Widget Spawning")
 	TSubclassOf<class AActor> spawnThing;
+
+	ARPCManager* rpc;
 
 protected:
 	/** Handles moving forward/backward */

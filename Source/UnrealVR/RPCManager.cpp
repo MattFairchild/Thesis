@@ -27,11 +27,9 @@ void ARPCManager::Tick( float DeltaTime )
 
 void ARPCManager::Server_SpawnObject_Implementation(FVector location)
 {
-	if (Role == ROLE_Authority)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Server spawn called"));
-		Multicast_SpawnObject(location);
-	}
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Server spawn called"));
+	GetWorld()->SpawnActor <ASpawnActor>(spawn, location, GetActorRotation());
+	//Multicast_SpawnObject(location);
 }
 
 bool ARPCManager::Server_SpawnObject_Validate(FVector location)
@@ -42,5 +40,5 @@ bool ARPCManager::Server_SpawnObject_Validate(FVector location)
 void ARPCManager::Multicast_SpawnObject_Implementation(FVector location)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Multicast"));
-	GetWorld()->SpawnActor <ASpawnActor>(spawn, location, GetActorRotation());
+	
 }
