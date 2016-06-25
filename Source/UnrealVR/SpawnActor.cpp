@@ -12,7 +12,9 @@ ASpawnActor::ASpawnActor()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> StaticMeshOb(TEXT("StaticMesh'/Game/StarterContent/Shapes/Shape_QuadPyramid.Shape_QuadPyramid'"));
 	
 	mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpawnableMesh)"));
+
 	bReplicates = true;
+	bReplicateMovement = true;
 
 	if (StaticMeshOb.Succeeded())
 	{

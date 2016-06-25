@@ -29,7 +29,4 @@ public:
 	//RPCs
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_SpawnObject(FVector location);
-
-	UFUNCTION(Unreliable, NetMulticast)
-	void Multicast_SpawnObject(FVector location);
 };

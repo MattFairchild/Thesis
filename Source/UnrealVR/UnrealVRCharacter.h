@@ -53,16 +53,21 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Widget Spawning")
 	TSubclassOf<class AActor> spawnThing;
 
+	UPROPERTY(VisibleAnywhere)
 	ARPCManager* rpc;
 
 protected:
 	/** Handles moving forward/backward */
 	void MoveForward(float Val);
 
-	/** Handles stafing movement, left and right */
+	/** Handles strafing movement, left and right */
 	void MoveRight(float Val);
 
 	void spawnObject();
+
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_SpawnObject(FVector location);
+
 	void leftClick();
 	void ZoomIn();
 	void ZoomOut();

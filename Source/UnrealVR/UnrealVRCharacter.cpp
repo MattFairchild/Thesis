@@ -52,6 +52,7 @@ void AUnrealVRCharacter::BeginPlay()
 
 	rpc = GetWorld()->SpawnActor<ARPCManager>(ARPCManager::StaticClass());
 	rpc->AttachRootComponentTo(this->RootComponent);
+	rpc->SetOwner(this);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -132,8 +133,18 @@ void AUnrealVRCharacter::leftClick()
 void AUnrealVRCharacter::spawnObject()
 {
 	currentlyInFocus();
+	Server_SpawnObject(hit.Location);
+}
+
+void AUnrealVRCharacter::Server_SpawnObject_Implementation(FVector location)
+{
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Spawn Object called"));
-	rpc->Server_SpawnObject(hit.Location);
+	rpc->Server_SpawnObject(location);
+}
+
+bool AUnrealVRCharacter::Server_SpawnObject_Validate(FVector location)
+{
+	return true;
 }
 
 void AUnrealVRCharacter::Tick(float DeltaTime)
