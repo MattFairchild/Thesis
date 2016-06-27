@@ -14,10 +14,28 @@ private:
 	UPROPERTY()
 	class UStaticMeshComponent* mesh;
 
+	UPROPERTY(Replicated)
+	bool isInHand;
+
+	UPROPERTY(VisibleAnywhere, Category = "Color")
+	TArray<UMaterialInterface*> mats;
+
+	UPROPERTY(ReplicatedUsing = UpdateMaterial)
+	int currentMat;
+
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_SwitchColors();
+
+	UFUNCTION()
+	void UpdateMaterial();
+
 public:	
 	// Sets default values for this actor's properties
 	ASpawnActor();
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	//function to set all the replicated variables into
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 };
