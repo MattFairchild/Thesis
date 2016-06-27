@@ -23,9 +23,6 @@ private:
 	UPROPERTY(ReplicatedUsing = UpdateMaterial)
 	int currentMat;
 
-	UFUNCTION(Reliable, Server, WithValidation)
-	void Server_SwitchColors();
-
 	UFUNCTION()
 	void UpdateMaterial();
 
@@ -35,6 +32,12 @@ public:
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UStaticMeshComponent* getMesh() const;
+
+	void SwitchColors();
+
+	void setIsInHand(bool newVal);
 
 	//function to set all the replicated variables into
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;

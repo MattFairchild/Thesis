@@ -71,7 +71,7 @@ void AUnrealVRCharacter::SetupPlayerInputComponent(class UInputComponent* InputC
 
 	InputComponent->BindAction("MouseWheelUp", IE_Pressed, this, &AUnrealVRCharacter::mouseWheelUp);
 	InputComponent->BindAction("MouseWheelDown", IE_Pressed, this, &AUnrealVRCharacter::mouseWheelDown);
-	InputComponent->BindAction("ChangeColor", IE_Pressed, this, &AUnrealVRCharacter::changeInHandColor);
+	InputComponent->BindAction("ChangeColor", IE_Pressed, this, &AUnrealVRCharacter::SwitchColor);
 	InputComponent->BindAction("Spawn", IE_Pressed, this, &AUnrealVRCharacter::spawnObject);
 
 	InputComponent->BindAxis("MoveForward", this, &AUnrealVRCharacter::MoveForward);
@@ -118,7 +118,7 @@ void AUnrealVRCharacter::LookUpAtRate(float Rate)
 
 void AUnrealVRCharacter::leftClick()
 {
-	AActor* actor = currentlyInFocus(true);
+	ASpawnActor* actor = currentlyInFocus(true);
 
 	if (actor && !inHand)
 	{
@@ -128,23 +128,6 @@ void AUnrealVRCharacter::leftClick()
 	{
 		releaseObject();
 	}
-}
-
-void AUnrealVRCharacter::spawnObject()
-{
-	currentlyInFocus();
-	Server_SpawnObject(hit.Location);
-}
-
-void AUnrealVRCharacter::Server_SpawnObject_Implementation(FVector location)
-{
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Spawn Object called"));
-	rpc->Server_SpawnObject(location);
-}
-
-bool AUnrealVRCharacter::Server_SpawnObject_Validate(FVector location)
-{
-	return true;
 }
 
 void AUnrealVRCharacter::Tick(float DeltaTime)
@@ -187,7 +170,7 @@ void AUnrealVRCharacter::Tick(float DeltaTime)
 	}
 }
 
-AActor* AUnrealVRCharacter::currentlyInFocus(bool onlyIfMovable)
+ASpawnActor* AUnrealVRCharacter::currentlyInFocus(bool onlyIfMovable)
 {
 	//if the player is holding something currently, then we don't need to check
 	if (inHand)
@@ -211,11 +194,15 @@ AActor* AUnrealVRCharacter::currentlyInFocus(bool onlyIfMovable)
 
 	if (hasHit)
 	{
-		AActor* actor = hit.GetActor();
+		AActor* hitActor = hit.GetActor();
 		bool moveable = false;
 		hitDistance = hit.Distance;
 
-		//RETURNING ONLY STATICMESHES AT THE MOMENT, COULD BE ANY OTHER SCRIPT
+		//RETURNING ONLY ASPAWNACTORS AT THE MOMENT, COULD BE ANY OTHER SCRIPT
+		ASpawnActor* actor = Cast<ASpawnActor>(hitActor);
+		if (!actor)
+			return nullptr;
+
 		//get the mobility of the object if it has a static mesh
 		UStaticMeshComponent* mesh = Cast<UStaticMeshComponent>(actor->GetRootComponent());
 		if (mesh)
@@ -316,19 +303,7 @@ void AUnrealVRCharacter::mouseWheelDown()
 	FMath::Clamp<float>(hitDistance, 200.0f, 5000.0f);
 }
 
-void AUnrealVRCharacter::changeInHandColor()
-{
-	if (inHand)
-	{
-		AShape* shape = Cast<AShape>(inHand);
-		if (shape)
-		{
-			shape->switchColors();
-		}
-	}
-}
-
-void AUnrealVRCharacter::pickupObject(AActor* actor)
+void AUnrealVRCharacter::pickupObject(ASpawnActor* actor)
 {
 	//dont be able to pick up object if we are too close -> weird behaviour
 	if (tooCloseToObject())
@@ -345,7 +320,7 @@ void AUnrealVRCharacter::pickupObject(AActor* actor)
 	openMenu = GetWorld()->SpawnActor<AActor>(widget, hit.Location, rotation);
 
 	//turn highlight on actor off
-	highlight(actor, false);
+	//highlight(actor, false);
 
 	//attach, if it has the right component and is moveable: turn off physics and assign the inHand variable
 	UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(actor->GetRootComponent());
@@ -358,7 +333,7 @@ void AUnrealVRCharacter::pickupObject(AActor* actor)
 
 void AUnrealVRCharacter::releaseObject()
 {
-	highlight(inHand, false);
+	//highlight(inHand, false);
 
 	inHand->DetachRootComponentFromParent();
 	UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(inHand->GetRootComponent());
@@ -378,4 +353,38 @@ void AUnrealVRCharacter::highlight(AActor* actor, bool highlightOn)
 	{
 		mesh->SetRenderCustomDepth(highlightOn);
 	}
+}
+
+void AUnrealVRCharacter::spawnObject()
+{
+	currentlyInFocus();
+	Server_SpawnObject(hit.Location);
+}
+
+void AUnrealVRCharacter::Server_SpawnObject_Implementation(FVector location)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Spawn Object called"));
+	rpc->Server_SpawnObject(location);
+}
+
+bool AUnrealVRCharacter::Server_SpawnObject_Validate(FVector location)
+{
+	return true;
+}
+
+
+void AUnrealVRCharacter::SwitchColor()
+{
+	if(inHand)
+		Server_ChangeInHandColor(inHand);
+}
+
+void AUnrealVRCharacter::Server_ChangeInHandColor_Implementation(ASpawnActor* actor)
+{
+	actor->SwitchColors();
+}
+
+bool AUnrealVRCharacter::Server_ChangeInHandColor_Validate(ASpawnActor* actor)
+{
+	return true;
 }

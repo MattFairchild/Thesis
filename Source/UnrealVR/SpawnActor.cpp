@@ -58,25 +58,25 @@ void ASpawnActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 }
 
 
+UStaticMeshComponent* ASpawnActor::getMesh() const
+{
+	return mesh;
+}
+
 void ASpawnActor::UpdateMaterial()
 {
 	mesh->SetMaterial(0, mats[currentMat]);
 }
 
-/*
-	RPCs
-*/
-
-void ASpawnActor::Server_SwitchColors_Implementation()
+void ASpawnActor::SwitchColors()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("This is called on the server"));
 	currentMat = (currentMat + 1) % mats.Num();
 
 	//needs to be called manually,since in C++ the server does not call the RepNotify function automatically
 	UpdateMaterial();
 }
 
-bool ASpawnActor::Server_SwitchColors_Validate()
+void ASpawnActor::setIsInHand(bool newVal)
 {
-	return true;
+	isInHand = newVal;
 }

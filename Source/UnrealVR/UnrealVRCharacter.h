@@ -2,6 +2,7 @@
 #pragma once
 #include "GameFramework/Character.h"
 #include "RPCManager.h"
+#include "SpawnActor.h"
 #include "UnrealVRCharacter.generated.h"
 
 class UInputComponent;
@@ -20,7 +21,7 @@ class AUnrealVRCharacter : public ACharacter
 	class UCameraComponent* FirstPersonCameraComponent;
 
 	UPROPERTY()
-	AActor *inHand;
+	ASpawnActor *inHand;
 
 	UPROPERTY()
 	AActor *inFocus;
@@ -68,14 +69,18 @@ protected:
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_SpawnObject(FVector location);
 
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_ChangeInHandColor(ASpawnActor* actor);
+
+	void SwitchColor();
 	void leftClick();
 	void ZoomIn();
 	void ZoomOut();
 	void mouseWheelUp();
 	void mouseWheelDown();
-	void changeInHandColor();
 
-	AActor* currentlyInFocus(bool onlyIfMovable = false);
+
+	ASpawnActor* currentlyInFocus(bool onlyIfMovable = false);
 
 	//check for objects in focus and set the highlight accordingly
 	void higlightObject();
@@ -84,7 +89,7 @@ protected:
 	void highlight(AActor* actor, bool highlightOn);
 
 	//pick the passed object up
-	void pickupObject(AActor* actor);
+	void pickupObject(ASpawnActor* actor);
 
 	//drop the object in the players hand, if he has one
 	void releaseObject();
