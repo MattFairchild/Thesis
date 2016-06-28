@@ -64,35 +64,44 @@ protected:
 	/** Handles strafing movement, left and right */
 	void MoveRight(float Val);
 
-	void spawnObject();
 
+	void spawnObject();
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_SpawnObject(FVector location);
 
+	void SwitchColor();
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_ChangeInHandColor(ASpawnActor* actor);
 
-	void SwitchColor();
+	//pick the passed object up
+	void pickupObject(ASpawnActor* actor);
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_PickupObject(ASpawnActor* actor);
+
+	//drop the object in the players hand, if he has one
+	void releaseObject();
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_ReleaseObject(ASpawnActor* actor);
+
+	void spawnMenuWidget(FVector location);
+
+
+	/*Misc Input bindings*/
 	void leftClick();
 	void ZoomIn();
 	void ZoomOut();
 	void mouseWheelUp();
 	void mouseWheelDown();
 
-
 	ASpawnActor* currentlyInFocus(bool onlyIfMovable = false);
+
+	bool updateRaycastHit();
 
 	//check for objects in focus and set the highlight accordingly
 	void higlightObject();
 
 	//turn the highlight of a specific actor on or off
 	void highlight(AActor* actor, bool highlightOn);
-
-	//pick the passed object up
-	void pickupObject(ASpawnActor* actor);
-
-	//drop the object in the players hand, if he has one
-	void releaseObject();
 
 	//dont be able to pick up object if we are too close -> weird behaviour
 	bool tooCloseToObject();

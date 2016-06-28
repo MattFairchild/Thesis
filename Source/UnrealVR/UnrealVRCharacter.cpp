@@ -42,7 +42,6 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	Mesh1P->CastShadow = false;
 	Mesh1P->RelativeRotation = FRotator(1.9f, -19.19f, 5.2f);
 	Mesh1P->RelativeLocation = FVector(-0.5f, -4.4f, -155.7f);
-
 }
 
 void AUnrealVRCharacter::BeginPlay()
@@ -170,13 +169,8 @@ void AUnrealVRCharacter::Tick(float DeltaTime)
 	}
 }
 
-ASpawnActor* AUnrealVRCharacter::currentlyInFocus(bool onlyIfMovable)
+bool AUnrealVRCharacter::updateRaycastHit()
 {
-	//if the player is holding something currently, then we don't need to check
-	if (inHand)
-		return nullptr;
-
-
 	auto player = UGameplayStatics::GetPlayerController(this, 0);
 
 	FCollisionQueryParams CombatCollisionQuery(FName(TEXT("CombatTrace")), true, this);
@@ -192,7 +186,17 @@ ASpawnActor* AUnrealVRCharacter::currentlyInFocus(bool onlyIfMovable)
 
 	bool hasHit = GetWorld()->LineTraceSingleByChannel(hit, pos, endTrace, ECC_GameTraceChannel1, CombatCollisionQuery);
 
-	if (hasHit)
+	return hasHit;
+}
+
+ASpawnActor* AUnrealVRCharacter::currentlyInFocus(bool onlyIfMovable)
+{
+	////if the player is holding something currently, then we don't need to check
+	//if (inHand)
+	//	return nullptr;
+
+	//update raycast and if it has hit something, than proceed
+	if (updateRaycastHit())
 	{
 		AActor* hitActor = hit.GetActor();
 		bool moveable = false;
@@ -208,9 +212,6 @@ ASpawnActor* AUnrealVRCharacter::currentlyInFocus(bool onlyIfMovable)
 		if (mesh)
 		{
 			FVector location = hit.GetActor()->GetActorLocation();
-
-			if(actor != inFocus)
-				UE_LOG(LogFPChar, Warning, TEXT("Hit Character wit name \"%s\" at loca is %d, %d, %d"), (hasHit ? *hit.GetComponent()->GetName() : TEXT("NO hit")), location.X, location.Y, location.Z);
 
 			moveable = (mesh->Mobility == EComponentMobility::Movable);
 
@@ -303,44 +304,6 @@ void AUnrealVRCharacter::mouseWheelDown()
 	FMath::Clamp<float>(hitDistance, 200.0f, 5000.0f);
 }
 
-void AUnrealVRCharacter::pickupObject(ASpawnActor* actor)
-{
-	//dont be able to pick up object if we are too close -> weird behaviour
-	if (tooCloseToObject())
-	{
-		return;
-	}
-
-	//if we already have a menu open, destroy it first
-	if(openMenu)
-		openMenu->Destroy();
-
-	FRotator rotation = this->GetActorRotation();
-	rotation.Yaw += 180.0f;
-	openMenu = GetWorld()->SpawnActor<AActor>(widget, hit.Location, rotation);
-
-	//turn highlight on actor off
-	//highlight(actor, false);
-
-	//attach, if it has the right component and is moveable: turn off physics and assign the inHand variable
-	UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(actor->GetRootComponent());
-	if (comp)
-	{
-		comp->SetSimulatePhysics(false);
-		inHand = actor;
-	}
-}
-
-void AUnrealVRCharacter::releaseObject()
-{
-	//highlight(inHand, false);
-
-	inHand->DetachRootComponentFromParent();
-	UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(inHand->GetRootComponent());
-	comp->SetSimulatePhysics(true);
-	inHand = nullptr;
-}
-
 bool AUnrealVRCharacter::tooCloseToObject()
 {
 	return (hitDistance < 200.0f);
@@ -355,11 +318,66 @@ void AUnrealVRCharacter::highlight(AActor* actor, bool highlightOn)
 	}
 }
 
+void AUnrealVRCharacter::spawnMenuWidget(FVector location)
+{
+	//if we already have a menu open, destroy it first
+	if (openMenu)
+		openMenu->Destroy();
+
+	FRotator rotation = this->GetActorRotation();
+	rotation.Yaw += 180.0f;
+	openMenu = GetWorld()->SpawnActor<AActor>(widget, location, rotation);
+}
+
+/********************************************************************************/
+/*								RPC calling functions							*/			
+/********************************************************************************/
+
 void AUnrealVRCharacter::spawnObject()
 {
-	currentlyInFocus();
-	Server_SpawnObject(hit.Location);
+	if(updateRaycastHit())
+		Server_SpawnObject(hit.Location);
 }
+
+void AUnrealVRCharacter::SwitchColor()
+{
+	if (inHand)
+		Server_ChangeInHandColor(inHand);
+}
+
+void AUnrealVRCharacter::releaseObject()
+{
+	//highlight(inHand, false);
+
+	inHand->DetachRootComponentFromParent();
+	UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(inHand->GetRootComponent());
+	comp->SetSimulatePhysics(true);
+	inHand = nullptr;
+}
+
+void AUnrealVRCharacter::pickupObject(ASpawnActor* actor)
+{
+	//dont be able to pick up object if we are too close -> weird behaviour
+	if (tooCloseToObject())
+	{
+		return;
+	}
+
+	//turn highlight on actor off
+	//highlight(actor, false);
+
+	//attach, if it has the right component and is moveable: turn off physics and assign the inHand variable
+	UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(actor->GetRootComponent());
+	if (comp)
+	{
+		comp->SetSimulatePhysics(false);
+		inHand = actor;
+	}
+}
+
+/********************************************************************************/
+/*								RPC  FUNCTIONS									*/
+/********************************************************************************/
 
 void AUnrealVRCharacter::Server_SpawnObject_Implementation(FVector location)
 {
@@ -373,12 +391,6 @@ bool AUnrealVRCharacter::Server_SpawnObject_Validate(FVector location)
 }
 
 
-void AUnrealVRCharacter::SwitchColor()
-{
-	if(inHand)
-		Server_ChangeInHandColor(inHand);
-}
-
 void AUnrealVRCharacter::Server_ChangeInHandColor_Implementation(ASpawnActor* actor)
 {
 	actor->SwitchColors();
@@ -388,3 +400,35 @@ bool AUnrealVRCharacter::Server_ChangeInHandColor_Validate(ASpawnActor* actor)
 {
 	return true;
 }
+
+
+
+
+
+
+void AUnrealVRCharacter::Server_PickupObject_Implementation(ASpawnActor* actor)
+{
+	
+}
+
+bool AUnrealVRCharacter::Server_PickupObject_Validate(ASpawnActor* actor)
+{
+	return true;
+}
+
+
+
+
+
+
+
+void AUnrealVRCharacter::Server_ReleaseObject_Implementation(ASpawnActor* actor)
+{
+	
+}
+
+bool AUnrealVRCharacter::Server_ReleaseObject_Validate(ASpawnActor* actor)
+{
+	return true;
+}
+
