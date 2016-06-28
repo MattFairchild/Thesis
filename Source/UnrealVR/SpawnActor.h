@@ -33,11 +33,12 @@ public:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UStaticMeshComponent* getMesh() const;
+	UStaticMeshComponent* GetMesh() const;
+	bool IsInHand() const;
 
 	void SwitchColors();
 
-	void setIsInHand(bool newVal);
+	void SetIsInHand(bool newVal);
 
 	//function to set all the replicated variables into
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;

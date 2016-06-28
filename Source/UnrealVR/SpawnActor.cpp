@@ -58,7 +58,7 @@ void ASpawnActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 }
 
 
-UStaticMeshComponent* ASpawnActor::getMesh() const
+UStaticMeshComponent* ASpawnActor::GetMesh() const
 {
 	return mesh;
 }
@@ -76,7 +76,12 @@ void ASpawnActor::SwitchColors()
 	UpdateMaterial();
 }
 
-void ASpawnActor::setIsInHand(bool newVal)
+void ASpawnActor::SetIsInHand(bool newVal)
 {
 	isInHand = newVal;
+}
+
+bool ASpawnActor::IsInHand() const
+{
+	return isInHand;
 }

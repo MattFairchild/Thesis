@@ -152,16 +152,7 @@ void AUnrealVRCharacter::Tick(float DeltaTime)
 		UCameraComponent* cam = this->GetFirstPersonCameraComponent();
 		FVector location = cam->GetComponentLocation() + (cam->GetForwardVector() * hitDistance);
 		
-		AShape* shape = Cast<AShape>(inHand);
-		if (shape)
-		{
-			shape->setShapePosition(location);
-		}
-		else
-		{
-			inHand->SetActorLocation(location);
-		}
-		
+		positionObject(inHand, location);
 	}
 	else
 	{
@@ -349,30 +340,29 @@ void AUnrealVRCharacter::releaseObject()
 {
 	//highlight(inHand, false);
 
-	inHand->DetachRootComponentFromParent();
-	UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(inHand->GetRootComponent());
-	comp->SetSimulatePhysics(true);
+	Server_ReleaseObject(inHand);
 	inHand = nullptr;
 }
 
 void AUnrealVRCharacter::pickupObject(ASpawnActor* actor)
 {
 	//dont be able to pick up object if we are too close -> weird behaviour
-	if (tooCloseToObject())
+	if (tooCloseToObject() || actor->IsInHand())
 	{
 		return;
 	}
 
+	inHand = actor;
+	Server_PickupObject(actor);
+
 	//turn highlight on actor off
 	//highlight(actor, false);
+}
 
-	//attach, if it has the right component and is moveable: turn off physics and assign the inHand variable
-	UPrimitiveComponent* comp = Cast<UPrimitiveComponent>(actor->GetRootComponent());
-	if (comp)
-	{
-		comp->SetSimulatePhysics(false);
-		inHand = actor;
-	}
+
+void AUnrealVRCharacter::positionObject(AActor* actor, FVector location)
+{
+	Server_PositionObject(actor, location);
 }
 
 /********************************************************************************/
@@ -406,9 +396,13 @@ bool AUnrealVRCharacter::Server_ChangeInHandColor_Validate(ASpawnActor* actor)
 
 
 
+
+
+
 void AUnrealVRCharacter::Server_PickupObject_Implementation(ASpawnActor* actor)
 {
-	
+	actor->SetIsInHand(true);
+	actor->GetMesh()->SetSimulatePhysics(false);
 }
 
 bool AUnrealVRCharacter::Server_PickupObject_Validate(ASpawnActor* actor)
@@ -424,10 +418,28 @@ bool AUnrealVRCharacter::Server_PickupObject_Validate(ASpawnActor* actor)
 
 void AUnrealVRCharacter::Server_ReleaseObject_Implementation(ASpawnActor* actor)
 {
-	
+	actor->SetIsInHand(false);
+	actor->GetMesh()->SetSimulatePhysics(true);
 }
 
 bool AUnrealVRCharacter::Server_ReleaseObject_Validate(ASpawnActor* actor)
+{
+	return true;
+}
+
+
+
+
+
+
+
+
+void AUnrealVRCharacter::Server_PositionObject_Implementation(AActor* actor, FVector location)
+{
+	actor->SetActorLocation(location);
+}
+
+bool AUnrealVRCharacter::Server_PositionObject_Validate(AActor* actor, FVector location)
 {
 	return true;
 }

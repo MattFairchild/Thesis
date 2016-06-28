@@ -83,6 +83,12 @@ protected:
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_ReleaseObject(ASpawnActor* actor);
 
+	//drop the object in the players hand, if he has one
+	void positionObject(AActor* actor, FVector location);
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_PositionObject(AActor* actor, FVector location);
+
+
 	void spawnMenuWidget(FVector location);
 
 
