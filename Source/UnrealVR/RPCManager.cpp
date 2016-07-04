@@ -7,6 +7,10 @@
 // Sets default values
 ARPCManager::ARPCManager()
 {
+	//create dummy root object
+	USceneComponent* root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	this->RootComponent = root;
+
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;

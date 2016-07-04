@@ -21,6 +21,8 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	previous = nullptr;
 	openMenu = nullptr;
 
+	bReplicates = true;
+
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 
@@ -28,7 +30,7 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
 
-	// Create a CameraComponent	
+	// Create a CameraComponent
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->AttachParent = GetCapsuleComponent();
 	FirstPersonCameraComponent->RelativeLocation = FVector(-39.56f, 1.75f, 64.f); // Position the camera
@@ -36,12 +38,23 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
-	Mesh1P->SetOnlyOwnerSee(true);
+	Mesh1P->SetOnlyOwnerSee(false);
 	Mesh1P->AttachParent = FirstPersonCameraComponent;
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
 	Mesh1P->RelativeRotation = FRotator(1.9f, -19.19f, 5.2f);
 	Mesh1P->RelativeLocation = FVector(-0.5f, -4.4f, -155.7f);
+
+
+	bladeChar = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh Component through Code"));
+	bladeChar->AttachParent = FirstPersonCameraComponent;
+	bladeChar->RelativeLocation = FVector(-0.0f, -0.0f, -0.0f);
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/InfinityBladeWarriors/Character/CompleteCharacters/SK_CharM_Robo.SK_CharM_Robo'"));
+	if (StaticSkeletonMeshOb.Succeeded())
+	{
+		bladeChar->SetSkeletalMesh(StaticSkeletonMeshOb.Object);
+	}
+
 }
 
 void AUnrealVRCharacter::BeginPlay()
@@ -52,6 +65,8 @@ void AUnrealVRCharacter::BeginPlay()
 	rpc = GetWorld()->SpawnActor<ARPCManager>(ARPCManager::StaticClass());
 	rpc->AttachRootComponentTo(this->RootComponent);
 	rpc->SetOwner(this);
+
+	bladeChar->RelativeLocation = FVector(-0.0f, -0.0f, -0.0f);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -117,7 +132,7 @@ void AUnrealVRCharacter::LookUpAtRate(float Rate)
 
 void AUnrealVRCharacter::leftClick()
 {
-	ASpawnActor* actor = currentlyInFocus(true);
+	ASpawnActor* actor = GetActorInFocus(true);
 
 	if (actor && !inHand)
 	{
@@ -154,10 +169,10 @@ void AUnrealVRCharacter::Tick(float DeltaTime)
 		
 		positionObject(inHand, location);
 	}
-	else
-	{
-		//higlightObject();
-	}
+	//else
+	//{
+	//	higlightObject();
+	//}
 }
 
 bool AUnrealVRCharacter::updateRaycastHit()
@@ -180,7 +195,7 @@ bool AUnrealVRCharacter::updateRaycastHit()
 	return hasHit;
 }
 
-ASpawnActor* AUnrealVRCharacter::currentlyInFocus(bool onlyIfMovable)
+ASpawnActor* AUnrealVRCharacter::GetActorInFocus(bool onlyIfMovable)
 {
 	////if the player is holding something currently, then we don't need to check
 	//if (inHand)
@@ -225,8 +240,7 @@ ASpawnActor* AUnrealVRCharacter::currentlyInFocus(bool onlyIfMovable)
 
 void AUnrealVRCharacter::higlightObject()
 {
-	inFocus = currentlyInFocus();
-
+	inFocus = GetActorInFocus();
 
 	/* We have 3 cases:
 		1. there is no "previous" actor, so we just started off
@@ -237,7 +251,7 @@ void AUnrealVRCharacter::higlightObject()
 	//we set the outline effect through "SetRenderCustomDepth" if it is a moveable object we can pick up
 	if (previous == nullptr)
 	{
-		highlight(inFocus, true);
+		//highlight(inFocus, true);
 		previous = inFocus;
 	}
 	//if we are looking at the object inHand, we can disregard this (when picking up item we will always have in in the focus)
@@ -247,10 +261,10 @@ void AUnrealVRCharacter::higlightObject()
 	}
 	else
 	{
-		if (previous)
-		{
-			highlight(previous, false);
-		}
+		//if (previous)
+		//{
+		//	highlight(previous, false);
+		//}
 
 		//only if we have an actual object in Focus
 		if (inFocus)
@@ -333,7 +347,19 @@ void AUnrealVRCharacter::spawnObject()
 void AUnrealVRCharacter::SwitchColor()
 {
 	if (inHand)
+	{
 		Server_ChangeInHandColor(inHand);
+	}
+	//if i press the changeColor button and I have a ASpawnActor in the reticle, then change color in spot	
+	else
+	{
+		//do we have a SpawnAsctor under reticle that has not been pickup up yet?
+		ASpawnActor* actor = GetActorInFocus();
+		if (actor && !actor->IsInHand())
+		{
+			Server_ChangeInHandColor(actor);
+		}
+	}
 }
 
 void AUnrealVRCharacter::releaseObject()
@@ -362,6 +388,7 @@ void AUnrealVRCharacter::pickupObject(ASpawnActor* actor)
 
 void AUnrealVRCharacter::positionObject(AActor* actor, FVector location)
 {
+	actor->SetActorLocation(location); //
 	Server_PositionObject(actor, location);
 }
 
@@ -369,6 +396,9 @@ void AUnrealVRCharacter::positionObject(AActor* actor, FVector location)
 /*								RPC  FUNCTIONS									*/
 /********************************************************************************/
 
+
+
+/*								SPAWN OBJECT									*/
 void AUnrealVRCharacter::Server_SpawnObject_Implementation(FVector location)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Spawn Object called"));
@@ -381,6 +411,8 @@ bool AUnrealVRCharacter::Server_SpawnObject_Validate(FVector location)
 }
 
 
+
+/*								CHANGE COLOR									*/
 void AUnrealVRCharacter::Server_ChangeInHandColor_Implementation(ASpawnActor* actor)
 {
 	actor->SwitchColors();
@@ -393,12 +425,7 @@ bool AUnrealVRCharacter::Server_ChangeInHandColor_Validate(ASpawnActor* actor)
 
 
 
-
-
-
-
-
-
+/*								PICKUP OBJECT									*/
 void AUnrealVRCharacter::Server_PickupObject_Implementation(ASpawnActor* actor)
 {
 	actor->SetIsInHand(true);
@@ -412,10 +439,7 @@ bool AUnrealVRCharacter::Server_PickupObject_Validate(ASpawnActor* actor)
 
 
 
-
-
-
-
+/*								RELEASE OBJECT									*/
 void AUnrealVRCharacter::Server_ReleaseObject_Implementation(ASpawnActor* actor)
 {
 	actor->SetIsInHand(false);
@@ -429,11 +453,7 @@ bool AUnrealVRCharacter::Server_ReleaseObject_Validate(ASpawnActor* actor)
 
 
 
-
-
-
-
-
+/*								POSITION OBJECT									*/
 void AUnrealVRCharacter::Server_PositionObject_Implementation(AActor* actor, FVector location)
 {
 	actor->SetActorLocation(location);
@@ -444,3 +464,15 @@ bool AUnrealVRCharacter::Server_PositionObject_Validate(AActor* actor, FVector l
 	return true;
 }
 
+
+
+/********************************************************************************/
+/*								RPC  FUNCTIONS									*/
+/********************************************************************************/
+
+void AUnrealVRCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	// Here we list the variables we want to replicate + a condition if wanted DOREPLIFETIME(ATestPlayerCharacter, Health);
+
+	DOREPLIFETIME(AUnrealVRCharacter, Mesh1P);
+}

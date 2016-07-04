@@ -17,8 +17,9 @@ ASpawnActor::ASpawnActor()
 	isInHand = false;
 	currentMat = 0;
 
-	mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpawnableMesh)"));	
-	
+	mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpawnableMesh)"));
+	this->RootComponent = mesh;
+
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> StaticMeshOb(TEXT("StaticMesh'/Game/StarterContent/Shapes/Shape_QuadPyramid.Shape_QuadPyramid'"));
 	if (StaticMeshOb.Succeeded())
 	{

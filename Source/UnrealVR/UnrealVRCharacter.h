@@ -13,8 +13,11 @@ class AUnrealVRCharacter : public ACharacter
 	GENERATED_BODY()
 
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
-	UPROPERTY(VisibleDefaultsOnly, Category=Mesh)
+	UPROPERTY(VisibleDefaultsOnly, Category=Mesh, Replicated)
 	class USkeletalMeshComponent* Mesh1P;
+
+	UPROPERTY(VisibleAnywhere, Category = "Skeletal Mesh", Replicated)
+	class USkeletalMeshComponent* bladeChar;
 
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -99,7 +102,7 @@ protected:
 	void mouseWheelUp();
 	void mouseWheelDown();
 
-	ASpawnActor* currentlyInFocus(bool onlyIfMovable = false);
+	ASpawnActor* GetActorInFocus(bool onlyIfMovable = false);
 
 	bool updateRaycastHit();
 
@@ -137,5 +140,8 @@ public:
 
 	//ticks every frame
 	void Tick(float DeltaTime) override;
+
+
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 };
 
