@@ -45,10 +45,9 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	Mesh1P->RelativeRotation = FRotator(1.9f, -19.19f, 5.2f);
 	Mesh1P->RelativeLocation = FVector(-0.5f, -4.4f, -155.7f);
 
-
 	bladeChar = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh Component through Code"));
 	bladeChar->AttachParent = FirstPersonCameraComponent;
-	bladeChar->RelativeLocation = FVector(-0.0f, -0.0f, -0.0f);
+	bladeChar->RelativeLocation = FVector(-67.99f, 0.000408f, -161.0f);
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/InfinityBladeWarriors/Character/CompleteCharacters/SK_CharM_Robo.SK_CharM_Robo'"));
 	if (StaticSkeletonMeshOb.Succeeded())
 	{
@@ -191,6 +190,7 @@ bool AUnrealVRCharacter::updateRaycastHit()
 	FVector endTrace = pos + direction * 65000.0f;
 
 	bool hasHit = GetWorld()->LineTraceSingleByChannel(hit, pos, endTrace, ECC_GameTraceChannel1, CombatCollisionQuery);
+
 
 	return hasHit;
 }
