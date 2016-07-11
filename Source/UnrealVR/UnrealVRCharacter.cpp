@@ -47,13 +47,19 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 
 	bladeChar = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh Component through Code"));
 	bladeChar->AttachParent = FirstPersonCameraComponent;
-	bladeChar->RelativeLocation = FVector(-67.99f, 0.000408f, -161.0f);
-	static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/InfinityBladeWarriors/Character/CompleteCharacters/SK_CharM_Robo.SK_CharM_Robo'"));
+	//static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/InfinityBladeWarriors/Character/CompleteCharacters/SK_CharM_Robo.SK_CharM_Robo'"));
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/Mannequin/Character/Mesh/SK_Mannequin.SK_Mannequin'"));
 	if (StaticSkeletonMeshOb.Succeeded())
 	{
 		bladeChar->SetSkeletalMesh(StaticSkeletonMeshOb.Object);
 	}
 
+	//set the animation class. this is a blueprint animation class that is converted to Code before setting (via function)
+	static ConstructorHelpers::FObjectFinder<UAnimBlueprint> TmpMeshAnim(TEXT("AnimBlueprint'/Game/Mannequin/Animations/ThirdPerson_AnimBP.ThirdPerson_AnimBP'"));
+	if (TmpMeshAnim.Succeeded())
+	{
+		bladeChar->SetAnimInstanceClass(TmpMeshAnim.Object->GetAnimBlueprintGeneratedClass());
+	}
 }
 
 void AUnrealVRCharacter::BeginPlay()
@@ -65,7 +71,7 @@ void AUnrealVRCharacter::BeginPlay()
 	rpc->AttachRootComponentTo(this->RootComponent);
 	rpc->SetOwner(this);
 
-	bladeChar->RelativeLocation = FVector(-0.0f, -0.0f, -0.0f);
+	bladeChar->RelativeLocation = FVector(-40.f, 0.00408f, -161.0f);
 }
 
 //////////////////////////////////////////////////////////////////////////
