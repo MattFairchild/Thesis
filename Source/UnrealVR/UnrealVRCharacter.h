@@ -3,6 +3,7 @@
 #include "GameFramework/Character.h"
 #include "RPCManager.h"
 #include "SpawnActor.h"
+#include "ParticleDefinitions.h"
 #include "UnrealVRCharacter.generated.h"
 
 class UInputComponent;
@@ -18,6 +19,10 @@ class AUnrealVRCharacter : public ACharacter
 
 	UPROPERTY(VisibleAnywhere, Category = "Skeletal Mesh", Replicated)
 	class USkeletalMeshComponent* bladeChar;
+
+	//Particle system variable
+	UPROPERTY(VisibleAnywhere, Category = "Particles", Replicated)
+	class UParticleSystemComponent* particleSystem;
 
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))

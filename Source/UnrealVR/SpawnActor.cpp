@@ -15,7 +15,6 @@ ASpawnActor::ASpawnActor()
 	bAlwaysRelevant = true;
 
 	isInHand = false;
-	currentMat = 0;
 
 	mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpawnableMesh)"));
 	this->RootComponent = mesh;
@@ -26,19 +25,28 @@ ASpawnActor::ASpawnActor()
 		mesh->SetStaticMesh(StaticMeshOb.Object);
 	}
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInstance> mat1(TEXT("MaterialInstanceConstant'/Game/Materials/ColorMaterial_Inst.ColorMaterial_Inst'"));
+	static ConstructorHelpers::FObjectFinder<UMaterialInstance> mat1(TEXT("MaterialInstanceConstant'/Game/Materials/ColorMaterial_Red.ColorMaterial_Red'"));
 	if (mat1.Succeeded())
 	{
 		mats.Add(mat1.Object);
 	}
 
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInstance> mat2(TEXT("MaterialInstanceConstant'/Game/Materials/ColorMaterial_Inst2.ColorMaterial_Inst2'"));
+	static ConstructorHelpers::FObjectFinder<UMaterialInstance> mat2(TEXT("MaterialInstanceConstant'/Game/Materials/ColorMaterial_Blue.ColorMaterial_Blue'"));
 	if (mat2.Succeeded())
 	{
 		mats.Add(mat2.Object);
 	}
 
+
+	static ConstructorHelpers::FObjectFinder<UMaterialInstance> mat3(TEXT("MaterialInstanceConstant'/Game/Materials/ColorMaterial_Yellow.ColorMaterial_Yellow'"));
+	if (mat3.Succeeded())
+	{
+		mats.Add(mat3.Object);
+	}
+
+
+	currentMat = rand() % mats.Num();
 	UpdateMaterial();
 }
 

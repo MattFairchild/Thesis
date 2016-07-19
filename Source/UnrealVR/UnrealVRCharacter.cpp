@@ -12,7 +12,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
 //////////////////////////////////////////////////////////////////////////
 // AUnrealVRCharacter
-
 AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -38,7 +37,7 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
-	Mesh1P->SetOnlyOwnerSee(false);
+	Mesh1P->SetOnlyOwnerSee(true);
 	Mesh1P->AttachParent = FirstPersonCameraComponent;
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
@@ -47,6 +46,7 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 
 	bladeChar = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh Component through Code"));
 	bladeChar->AttachParent = FirstPersonCameraComponent;
+	bladeChar->SetOwnerNoSee(true); //set so that owner does not see his own mesh, should only see FPS hands
 	//static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/InfinityBladeWarriors/Character/CompleteCharacters/SK_CharM_Robo.SK_CharM_Robo'"));
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/Mannequin/Character/Mesh/SK_Mannequin.SK_Mannequin'"));
 	if (StaticSkeletonMeshOb.Succeeded())
@@ -60,6 +60,18 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	{
 		bladeChar->SetAnimInstanceClass(TmpMeshAnim.Object->GetAnimBlueprintGeneratedClass());
 	}
+
+	//Create the particle system component.
+	ConstructorHelpers::FObjectFinder<UParticleSystem> ArbitraryParticleName(TEXT("ParticleSystem'/Game/ExampleContent/Effects/ParticleSystems/P_electricity_arc.P_electricity_arc'"));
+	particleSystem = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("PickupParticleSystem"));
+
+	if (ArbitraryParticleName.Succeeded()) {
+		particleSystem->Template = ArbitraryParticleName.Object;
+	}
+	particleSystem->bAutoActivate = false;
+	particleSystem->SetIsReplicated(true);
+	particleSystem->SetHiddenInGame(false);
+	particleSystem->DeactivateSystem();
 }
 
 void AUnrealVRCharacter::BeginPlay()
@@ -372,6 +384,8 @@ void AUnrealVRCharacter::releaseObject()
 {
 	//highlight(inHand, false);
 
+	particleSystem->DeactivateSystem();
+
 	Server_ReleaseObject(inHand);
 	inHand = nullptr;
 }
@@ -386,6 +400,10 @@ void AUnrealVRCharacter::pickupObject(ASpawnActor* actor)
 
 	inHand = actor;
 	Server_PickupObject(actor);
+
+	particleSystem->SetActorParameter("BeamSource", this);
+	particleSystem->SetActorParameter("BeamTarget", inHand);
+	particleSystem->ActivateSystem();
 
 	//turn highlight on actor off
 	//highlight(actor, false);
@@ -481,4 +499,6 @@ void AUnrealVRCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	// Here we list the variables we want to replicate + a condition if wanted DOREPLIFETIME(ATestPlayerCharacter, Health);
 
 	DOREPLIFETIME(AUnrealVRCharacter, Mesh1P);
+	//DOREPLIFETIME(AUnrealVRCharacter, bladeChar);
+	DOREPLIFETIME(AUnrealVRCharacter, particleSystem);
 }
