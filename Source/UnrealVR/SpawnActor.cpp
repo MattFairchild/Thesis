@@ -45,8 +45,7 @@ ASpawnActor::ASpawnActor()
 		mats.Add(mat3.Object);
 	}
 
-
-	currentMat = rand() % mats.Num();
+	currentMat = 1;
 	UpdateMaterial();
 }
 
@@ -80,6 +79,14 @@ void ASpawnActor::UpdateMaterial()
 void ASpawnActor::SwitchColors()
 {
 	currentMat = (currentMat + 1) % mats.Num();
+
+	//needs to be called manually,since in C++ the server does not call the RepNotify function automatically
+	UpdateMaterial();
+}
+
+void ASpawnActor::SetRandomColor()
+{
+	currentMat = rand() % mats.Num();
 
 	//needs to be called manually,since in C++ the server does not call the RepNotify function automatically
 	UpdateMaterial();

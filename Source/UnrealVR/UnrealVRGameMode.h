@@ -7,9 +7,10 @@ UCLASS(minimalapi)
 class AUnrealVRGameMode : public AGameMode
 {
 	GENERATED_BODY()
-
 public:
 	AUnrealVRGameMode();
+
+	virtual void PostLogin(APlayerController* NewPlayer) override;
 };
 
 

@@ -38,6 +38,8 @@ public:
 
 	void SwitchColors();
 
+	void SetRandomColor();
+
 	void SetIsInHand(bool newVal);
 
 	//function to set all the replicated variables into

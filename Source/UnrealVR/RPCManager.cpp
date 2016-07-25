@@ -27,13 +27,12 @@ void ARPCManager::BeginPlay()
 void ARPCManager::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
-
 }
 
 void ARPCManager::Server_SpawnObject_Implementation(FVector location)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Server spawn called"));
-	GetWorld()->SpawnActor <ASpawnActor>(spawn, location, GetActorRotation());
+	ASpawnActor* actor = GetWorld()->SpawnActor <ASpawnActor>(spawn, location, GetActorRotation());
+	actor->SetRandomColor();
 }
 
 bool ARPCManager::Server_SpawnObject_Validate(FVector location)
