@@ -43,6 +43,8 @@ class AUnrealVRCharacter : public ACharacter
 	FHitResult hit;
 
 	AActor* openMenu;
+
+	int ID;
 public:
 	AUnrealVRCharacter();
 
@@ -146,6 +148,7 @@ public:
 	//ticks every frame
 	void Tick(float DeltaTime) override;
 
+	void SetID(int id);
 
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 };

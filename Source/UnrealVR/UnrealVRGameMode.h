@@ -7,6 +7,8 @@ UCLASS(minimalapi)
 class AUnrealVRGameMode : public AGameMode
 {
 	GENERATED_BODY()
+private:
+	int nextID;
 public:
 	AUnrealVRGameMode();
 

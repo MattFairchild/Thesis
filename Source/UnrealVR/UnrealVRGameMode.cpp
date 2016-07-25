@@ -14,10 +14,18 @@ AUnrealVRGameMode::AUnrealVRGameMode()
 
 	// use our custom HUD class
 	HUDClass = AUnrealVRHUD::StaticClass();
+
+	nextID = 0;
 }
 
 void AUnrealVRGameMode::PostLogin(APlayerController* newPlayer)
 {
 	Super::PostLogin(newPlayer);
-	GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Yellow, TEXT("Testing"));
+
+	AUnrealVRCharacter* character = Cast<AUnrealVRCharacter>(newPlayer);
+	if (character)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Yellow, TEXT("New Player registered"));
+		character->SetID(nextID++);
+	}
 }

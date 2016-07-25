@@ -352,6 +352,12 @@ void AUnrealVRCharacter::spawnMenuWidget(FVector location)
 	openMenu = GetWorld()->SpawnActor<AActor>(widget, location, rotation);
 }
 
+
+void AUnrealVRCharacter::SetID(int id)
+{
+	ID = id;
+}
+
 /********************************************************************************/
 /*								RPC calling functions							*/			
 /********************************************************************************/
