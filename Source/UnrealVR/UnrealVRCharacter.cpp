@@ -22,8 +22,11 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 
 	bReplicates = true;
 
+	//set the root component to be the capsule component
+	this->RootComponent = GetCapsuleComponent();
+
 	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
+	GetCapsuleComponent()->InitCapsuleSize(30.f, 96.0f);
 
 	// set our turn rates for input
 	BaseTurnRate = 45.f;
@@ -31,22 +34,39 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 
 	// Create a CameraComponent
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->AttachParent = GetCapsuleComponent();
+	FirstPersonCameraComponent->AttachParent = this->RootComponent;
 	FirstPersonCameraComponent->RelativeLocation = FVector(-39.56f, 1.75f, 64.f); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
-	Mesh1P->SetOnlyOwnerSee(true);
 	Mesh1P->AttachParent = FirstPersonCameraComponent;
-	Mesh1P->bCastDynamicShadow = false;
-	Mesh1P->CastShadow = false;
-	Mesh1P->RelativeRotation = FRotator(1.9f, -19.19f, 5.2f);
+
+	Mesh1P->RelativeRotation = FRotator(5.5f, -20.19f, 5.2f);
 	Mesh1P->RelativeLocation = FVector(-0.5f, -4.4f, -155.7f);
 
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticHandsMeshOb(TEXT("SkeletalMesh'/Game/FirstPerson/Character/Mesh/SK_Mannequin_Arms.SK_Mannequin_Arms'"));
+	if (StaticHandsMeshOb.Succeeded())
+	{
+		Mesh1P->SetSkeletalMesh(StaticHandsMeshOb.Object);
+	}
+
+	//set the animation class of the hands. this is a blueprint animation class that is converted to Code before setting (via function)
+	static ConstructorHelpers::FObjectFinder<UAnimBlueprint> TmpHandsAnim(TEXT("AnimBlueprint'/Game/FirstPerson/Animations/FirstPerson_AnimBP.FirstPerson_AnimBP'"));
+	if (TmpHandsAnim.Succeeded())
+	{
+		Mesh1P->SetAnimInstanceClass(TmpHandsAnim.Object->GetAnimBlueprintGeneratedClass());
+	}
+
+	Mesh1P->SetOnlyOwnerSee(true);
+	Mesh1P->bCastDynamicShadow = false;
+	Mesh1P->CastShadow = false;
+
+
+	// Create the character that will be seen by any other particiapnts in the session (not seen by the owner)
 	bladeChar = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh Component through Code"));
 	bladeChar->AttachParent = FirstPersonCameraComponent;
-	bladeChar->SetOwnerNoSee(true); //set so that owner does not see his own mesh, should only see FPS hands
+	
 	//static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/InfinityBladeWarriors/Character/CompleteCharacters/SK_CharM_Robo.SK_CharM_Robo'"));
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/Mannequin/Character/Mesh/SK_Mannequin.SK_Mannequin'"));
 	if (StaticSkeletonMeshOb.Succeeded())
@@ -60,6 +80,11 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	{
 		bladeChar->SetAnimInstanceClass(TmpMeshAnim.Object->GetAnimBlueprintGeneratedClass());
 	}
+	
+	bladeChar->SetOwnerNoSee(true); //set so that owner does not see his own mesh, should only see FPS hands
+	bladeChar->RelativeLocation = FVector(50.0f, 0.0f, -157.0f);
+	bladeChar->RelativeRotation = FRotator(0.0f, -90.0f, 0.0f);
+
 
 	//Create the particle system component.
 	ConstructorHelpers::FObjectFinder<UParticleSystem> ArbitraryParticleName(TEXT("ParticleSystem'/Game/ExampleContent/Effects/ParticleSystems/P_electricity_arc.P_electricity_arc'"));
@@ -82,13 +107,10 @@ void AUnrealVRCharacter::BeginPlay()
 	rpc = GetWorld()->SpawnActor<ARPCManager>(ARPCManager::StaticClass());
 	rpc->AttachRootComponentTo(this->RootComponent);
 	rpc->SetOwner(this);
-
-	bladeChar->RelativeLocation = FVector(-40.f, 0.00408f, -161.0f);
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Input
-
 void AUnrealVRCharacter::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 {
 	// set up game play key bindings

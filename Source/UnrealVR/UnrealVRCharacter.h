@@ -15,7 +15,7 @@ class AUnrealVRCharacter : public ACharacter
 
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(VisibleDefaultsOnly, Category=Mesh, Replicated)
-	class USkeletalMeshComponent* Mesh1P;
+	class USkeletalMeshComponent* Mesh1P; //Mesh set in the Blueprint that inherits from this class
 
 	UPROPERTY(VisibleAnywhere, Category = "Skeletal Mesh", Replicated)
 	class USkeletalMeshComponent* bladeChar;
