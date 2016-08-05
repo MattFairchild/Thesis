@@ -90,23 +90,22 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	ConstructorHelpers::FObjectFinder<UParticleSystem> ArbitraryParticleName(TEXT("ParticleSystem'/Game/ExampleContent/Effects/ParticleSystems/P_electricity_arc.P_electricity_arc'"));
 	particleSystem = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("PickupParticleSystem"));
 
-	if (ArbitraryParticleName.Succeeded()) {
+	if (ArbitraryParticleName.Succeeded()) 
+	{
 		particleSystem->Template = ArbitraryParticleName.Object;
 	}
 	particleSystem->bAutoActivate = false;
 	particleSystem->SetIsReplicated(true);
 	particleSystem->SetHiddenInGame(false);
 	particleSystem->DeactivateSystem();
+
+	spawn = ASpawnActor::StaticClass();
 }
 
 void AUnrealVRCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
-
-	rpc = GetWorld()->SpawnActor<ARPCManager>(ARPCManager::StaticClass());
-	rpc->AttachRootComponentTo(this->RootComponent);
-	rpc->SetOwner(this);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -454,7 +453,9 @@ void AUnrealVRCharacter::positionObject(AActor* actor, FVector location)
 void AUnrealVRCharacter::Server_SpawnObject_Implementation(FVector location)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Spawn Object called"));
-	rpc->Server_SpawnObject(location);
+	
+	ASpawnActor* actor = GetWorld()->SpawnActor <ASpawnActor>(spawn, location, GetActorRotation());
+	actor->SetRandomColor();
 }
 
 bool AUnrealVRCharacter::Server_SpawnObject_Validate(FVector location)

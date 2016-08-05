@@ -29,6 +29,9 @@ class AUnrealVRCharacter : public ACharacter
 	class UCameraComponent* FirstPersonCameraComponent;
 
 	UPROPERTY()
+	TSubclassOf<ASpawnActor> spawn;
+
+	UPROPERTY()
 	ASpawnActor *inHand;
 
 	UPROPERTY()
@@ -63,9 +66,6 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Widget Spawning")
 	TSubclassOf<class AActor> spawnThing;
-
-	UPROPERTY(VisibleAnywhere)
-	ARPCManager* rpc;
 
 protected:
 	/** Handles moving forward/backward */
