@@ -1,7 +1,6 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 #pragma once
 #include "GameFramework/Character.h"
-#include "RPCManager.h"
 #include "SpawnActor.h"
 #include "ParticleDefinitions.h"
 #include "UnrealVRCharacter.generated.h"
@@ -13,16 +12,21 @@ class AUnrealVRCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
+	TMap<int32, UParticleSystemComponent*> particleSystemMap;
+
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(VisibleDefaultsOnly, Category=Mesh, Replicated)
 	class USkeletalMeshComponent* Mesh1P; //Mesh set in the Blueprint that inherits from this class
 
 	UPROPERTY(VisibleAnywhere, Category = "Skeletal Mesh", Replicated)
-	class USkeletalMeshComponent* bladeChar;
+	class USkeletalMeshComponent* avatar;
 
 	//Particle system variable
 	UPROPERTY(VisibleAnywhere, Category = "Particles", Replicated)
-	class UParticleSystemComponent* particleSystem;
+	class UParticleSystem* particleSystem;
+
+	UPROPERTY(VisibleAnywhere, Category = "Particles", Replicated)
+	UParticleSystemComponent* particleSystemInstance;
 
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -79,19 +83,39 @@ protected:
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_SpawnObject(FVector location);
 
+
+	void spawnParticleEffect(AActor* start, AActor* end);
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_SpawnParticleEffect(AActor* start, AActor* end, int newID);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_SpawnParticleEffect(AActor* start, AActor* end, int newID);
+
+
+	void despawnParticleEffect(int newID);
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_DespawnParticleEffect(int newID);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_DespawnParticleEffect(int newID);
+
+
 	void SwitchColor();
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_ChangeInHandColor(ASpawnActor* actor);
+
 
 	//pick the passed object up
 	void pickupObject(ASpawnActor* actor);
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_PickupObject(ASpawnActor* actor);
 
+
 	//drop the object in the players hand, if he has one
 	void releaseObject();
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_ReleaseObject(ASpawnActor* actor);
+
 
 	//drop the object in the players hand, if he has one
 	void positionObject(AActor* actor, FVector location);

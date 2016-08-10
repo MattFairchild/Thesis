@@ -23,10 +23,14 @@ void AUnrealVRGameMode::PostLogin(APlayerController* newPlayer)
 {
 	Super::PostLogin(newPlayer);
 
-	AUnrealVRCharacter* character = Cast<AUnrealVRCharacter>(newPlayer);
+	AUnrealVRCharacter* character = Cast<AUnrealVRCharacter>(newPlayer->GetCharacter());
 	if (character)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Yellow, TEXT("New Player registered"));
 		character->SetID(nextID++);
+
+		FString str = TEXT("New Player registered, num: ");
+		str.AppendInt(nextID);
+
+		GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Yellow, str);
 	}
 }

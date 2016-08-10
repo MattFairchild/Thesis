@@ -64,40 +64,39 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 
 
 	// Create the character that will be seen by any other particiapnts in the session (not seen by the owner)
-	bladeChar = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh Component through Code"));
-	bladeChar->AttachParent = FirstPersonCameraComponent;
+	avatar = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh Component through Code"));
+	avatar->AttachParent = FirstPersonCameraComponent;
 	
 	//static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/InfinityBladeWarriors/Character/CompleteCharacters/SK_CharM_Robo.SK_CharM_Robo'"));
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/Mannequin/Character/Mesh/SK_Mannequin.SK_Mannequin'"));
 	if (StaticSkeletonMeshOb.Succeeded())
 	{
-		bladeChar->SetSkeletalMesh(StaticSkeletonMeshOb.Object);
+		avatar->SetSkeletalMesh(StaticSkeletonMeshOb.Object);
 	}
 
 	//set the animation class. this is a blueprint animation class that is converted to Code before setting (via function)
 	static ConstructorHelpers::FObjectFinder<UAnimBlueprint> TmpMeshAnim(TEXT("AnimBlueprint'/Game/Mannequin/Animations/ThirdPerson_AnimBP.ThirdPerson_AnimBP'"));
 	if (TmpMeshAnim.Succeeded())
 	{
-		bladeChar->SetAnimInstanceClass(TmpMeshAnim.Object->GetAnimBlueprintGeneratedClass());
+		avatar->SetAnimInstanceClass(TmpMeshAnim.Object->GetAnimBlueprintGeneratedClass());
 	}
 	
-	bladeChar->SetOwnerNoSee(true); //set so that owner does not see his own mesh, should only see FPS hands
-	bladeChar->RelativeLocation = FVector(50.0f, 0.0f, -157.0f);
-	bladeChar->RelativeRotation = FRotator(0.0f, -90.0f, 0.0f);
+	avatar->SetOwnerNoSee(true); //set so that owner does not see his own mesh, should only see FPS hands
+	avatar->RelativeLocation = FVector(50.0f, 0.0f, -157.0f);
+	avatar->RelativeRotation = FRotator(0.0f, -90.0f, 0.0f);
 
 
 	//Create the particle system component.
-	ConstructorHelpers::FObjectFinder<UParticleSystem> ArbitraryParticleName(TEXT("ParticleSystem'/Game/ExampleContent/Effects/ParticleSystems/P_electricity_arc.P_electricity_arc'"));
-	particleSystem = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("PickupParticleSystem"));
+	ConstructorHelpers::FObjectFinder<UParticleSystem> ArbitraryParticleName(TEXT("ParticleSystem'/Game/ParticleSystem/ParticleSystems/P_Beam.P_Beam'"));
+	particleSystem = CreateDefaultSubobject<UParticleSystem>(TEXT("ParticleSystemDefault"));
 
 	if (ArbitraryParticleName.Succeeded()) 
 	{
-		particleSystem->Template = ArbitraryParticleName.Object;
+		particleSystem = ArbitraryParticleName.Object;
 	}
-	particleSystem->bAutoActivate = false;
-	particleSystem->SetIsReplicated(true);
-	particleSystem->SetHiddenInGame(false);
-	particleSystem->DeactivateSystem();
+
+	particleSystemInstance = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleSystemInstance"));
+
 
 	spawn = ASpawnActor::StaticClass();
 }
@@ -389,6 +388,16 @@ void AUnrealVRCharacter::spawnObject()
 		Server_SpawnObject(hit.Location);
 }
 
+void AUnrealVRCharacter::spawnParticleEffect(AActor* start, AActor* end)
+{
+	Server_SpawnParticleEffect(start, end, ID);
+}
+
+void AUnrealVRCharacter::despawnParticleEffect(int newID)
+{
+	Server_DespawnParticleEffect(newID);
+}
+
 void AUnrealVRCharacter::SwitchColor()
 {
 	if (inHand)
@@ -411,9 +420,9 @@ void AUnrealVRCharacter::releaseObject()
 {
 	//highlight(inHand, false);
 
-	particleSystem->DeactivateSystem();
-
 	Server_ReleaseObject(inHand);
+	despawnParticleEffect(ID);
+
 	inHand = nullptr;
 }
 
@@ -427,10 +436,7 @@ void AUnrealVRCharacter::pickupObject(ASpawnActor* actor)
 
 	inHand = actor;
 	Server_PickupObject(actor);
-
-	particleSystem->SetActorParameter("BeamSource", this);
-	particleSystem->SetActorParameter("BeamTarget", inHand);
-	particleSystem->ActivateSystem();
+	spawnParticleEffect(this, inHand);
 
 	//turn highlight on actor off
 	//highlight(actor, false);
@@ -463,6 +469,50 @@ bool AUnrealVRCharacter::Server_SpawnObject_Validate(FVector location)
 	return true;
 }
 
+
+
+/*								SPAWN PARTICLE EFFECT									*/
+void AUnrealVRCharacter::Server_SpawnParticleEffect_Implementation(AActor* start, AActor* end, int newID)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Emerald, TEXT("Particle Effect spawned"));
+
+	Multicast_SpawnParticleEffect(start, end, newID);
+}
+
+bool AUnrealVRCharacter::Server_SpawnParticleEffect_Validate(AActor* start, AActor* end, int newID)
+{
+	return true;
+}
+
+void AUnrealVRCharacter::Multicast_SpawnParticleEffect_Implementation(AActor* start, AActor* end, int newID)
+{
+	particleSystemInstance = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), particleSystem, start->GetActorTransform(), false);
+	particleSystemInstance->SetActorParameter("BeamSource", start);
+	particleSystemInstance->SetActorParameter("BeamTarget", end);
+	particleSystemInstance->ActivateSystem();
+
+	particleSystemMap.Add(newID, particleSystemInstance);
+}
+
+
+/*								DESPAWN PARTICLE EFFECT									*/
+void AUnrealVRCharacter::Server_DespawnParticleEffect_Implementation(int newID)
+{
+	Multicast_DespawnParticleEffect(newID);
+}
+
+bool AUnrealVRCharacter::Server_DespawnParticleEffect_Validate(int newID)
+{
+	return true;
+}
+
+void AUnrealVRCharacter::Multicast_DespawnParticleEffect_Implementation(int newID)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, TEXT("Despawning Particle Effect"));
+
+	particleSystemMap[newID]->Deactivate();
+	particleSystemMap.Remove(newID);
+}
 
 
 /*								CHANGE COLOR									*/
@@ -523,7 +573,8 @@ bool AUnrealVRCharacter::Server_PositionObject_Validate(AActor* actor, FVector l
 /*								RPC  FUNCTIONS									*/
 /********************************************************************************/
 
-void AUnrealVRCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+void AUnrealVRCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const 
+{
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	// Here we list the variables we want to replicate + a condition if wanted DOREPLIFETIME(ATestPlayerCharacter, Health);
 
