@@ -2,6 +2,8 @@
 #pragma once
 #include "GameFramework/Character.h"
 #include "SpawnActor.h"
+#include <chrono>
+#include <ctime>
 #include "ParticleDefinitions.h"
 #include "UnrealVRCharacter.generated.h"
 
@@ -78,6 +80,8 @@ protected:
 	/** Handles strafing movement, left and right */
 	void MoveRight(float Val);
 
+	/** Quit the game */
+	void QuitGame();
 
 	void spawnObject();
 	UFUNCTION(Reliable, Server, WithValidation)
@@ -175,5 +179,27 @@ public:
 	void SetID(int id);
 
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+
+
+
+
+
+
+	/*
+	
+			FUNCTIONS  AND VARIABLES TO CHECK FOR RTT TDT ETC.		
+	
+	*/
+
+	int32 timer;
+	FDateTime startTime, endTime;
+
+	void RTT_Test();
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_RTT_Test();
+	UFUNCTION(Client, Unreliable)
+	void Client_RTT_Test();
+
+
 };
 

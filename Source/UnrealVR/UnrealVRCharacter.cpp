@@ -16,6 +16,8 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	timer = 0.0;
+
 	inHand = nullptr;
 	previous = nullptr;
 	openMenu = nullptr;
@@ -52,11 +54,13 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	}
 
 	//set the animation class of the hands. this is a blueprint animation class that is converted to Code before setting (via function)
-	static ConstructorHelpers::FObjectFinder<UAnimBlueprint> TmpHandsAnim(TEXT("AnimBlueprint'/Game/FirstPerson/Animations/FirstPerson_AnimBP.FirstPerson_AnimBP'"));
+	static ConstructorHelpers::FObjectFinder<UAnimBlueprintGeneratedClass> TmpHandsAnim(TEXT("AnimBlueprintGeneratedClass'/Game/FirstPerson/Animations/FirstPerson_AnimBP.FirstPerson_AnimBP_C'"));
 	if (TmpHandsAnim.Succeeded())
 	{
-		Mesh1P->SetAnimInstanceClass(TmpHandsAnim.Object->GetAnimBlueprintGeneratedClass());
+		Mesh1P->SetAnimInstanceClass(TmpHandsAnim.Object);
 	}
+
+
 
 	Mesh1P->SetOnlyOwnerSee(true);
 	Mesh1P->bCastDynamicShadow = false;
@@ -75,10 +79,10 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	}
 
 	//set the animation class. this is a blueprint animation class that is converted to Code before setting (via function)
-	static ConstructorHelpers::FObjectFinder<UAnimBlueprint> TmpMeshAnim(TEXT("AnimBlueprint'/Game/Mannequin/Animations/ThirdPerson_AnimBP.ThirdPerson_AnimBP'"));
+	static ConstructorHelpers::FObjectFinder<UAnimBlueprintGeneratedClass> TmpMeshAnim(TEXT("AnimBlueprintGeneratedClass'/Game/Mannequin/Animations/ThirdPerson_AnimBP.ThirdPerson_AnimBP_C'"));
 	if (TmpMeshAnim.Succeeded())
 	{
-		avatar->SetAnimInstanceClass(TmpMeshAnim.Object->GetAnimBlueprintGeneratedClass());
+		avatar->SetAnimInstanceClass(TmpMeshAnim.Object);
 	}
 	
 	avatar->SetOwnerNoSee(true); //set so that owner does not see his own mesh, should only see FPS hands
@@ -124,6 +128,9 @@ void AUnrealVRCharacter::SetupPlayerInputComponent(class UInputComponent* InputC
 	InputComponent->BindAction("MouseWheelDown", IE_Pressed, this, &AUnrealVRCharacter::mouseWheelDown);
 	InputComponent->BindAction("ChangeColor", IE_Pressed, this, &AUnrealVRCharacter::SwitchColor);
 	InputComponent->BindAction("Spawn", IE_Pressed, this, &AUnrealVRCharacter::spawnObject);
+	InputComponent->BindAction("QuitGame", IE_Pressed, this, &AUnrealVRCharacter::QuitGame);
+
+	InputComponent->BindAction("RTTTest", IE_Pressed, this, &AUnrealVRCharacter::RTT_Test);
 
 	InputComponent->BindAxis("MoveForward", this, &AUnrealVRCharacter::MoveForward);
 	InputComponent->BindAxis("MoveRight", this, &AUnrealVRCharacter::MoveRight);
@@ -179,6 +186,11 @@ void AUnrealVRCharacter::leftClick()
 	{
 		releaseObject();
 	}
+}
+
+void AUnrealVRCharacter::QuitGame()
+{
+	GetWorld()->GetFirstPlayerController()->ConsoleCommand("quit");
 }
 
 void AUnrealVRCharacter::Tick(float DeltaTime)
@@ -375,7 +387,7 @@ void AUnrealVRCharacter::spawnMenuWidget(FVector location)
 
 void AUnrealVRCharacter::SetID(int id)
 {
-	ID = id;
+	this->ID = id;
 }
 
 /********************************************************************************/
@@ -581,4 +593,57 @@ void AUnrealVRCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME(AUnrealVRCharacter, Mesh1P);
 	//DOREPLIFETIME(AUnrealVRCharacter, bladeChar);
 	DOREPLIFETIME(AUnrealVRCharacter, particleSystem);
+}
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////////////////////////////
+
+/*
+
+			FUNCTIONS TO CHECK FOR RTT TDT ETC.
+
+*/
+
+//////////////////////////////////////////////////////
+
+
+void AUnrealVRCharacter::RTT_Test()
+{
+	startTime = FDateTime::UtcNow();
+	Server_RTT_Test();
+}
+
+
+
+void AUnrealVRCharacter::Server_RTT_Test_Implementation()
+{
+	Client_RTT_Test();
+}
+
+
+bool AUnrealVRCharacter::Server_RTT_Test_Validate()
+{
+	return true;
+}
+
+
+void AUnrealVRCharacter::Client_RTT_Test_Implementation()
+{
+	endTime = FDateTime::UtcNow();
+	timer = endTime.GetMillisecond() - startTime.GetMillisecond();
+
+	FString str = TEXT("");
+	str.AppendInt(timer);
+	str.Append(TEXT(" ms, from player "));
+	str.AppendInt(this->ID);
+
+	GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Yellow, str);
 }

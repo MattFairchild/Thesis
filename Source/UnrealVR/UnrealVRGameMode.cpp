@@ -31,6 +31,6 @@ void AUnrealVRGameMode::PostLogin(APlayerController* newPlayer)
 		FString str = TEXT("New Player registered, num: ");
 		str.AppendInt(nextID);
 
-		GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Yellow, str);
+		GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Cyan, str);
 	}
 }
