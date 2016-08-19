@@ -109,6 +109,15 @@ void AUnrealVRCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
+
+	//spawn a spawnActor IFF none instanziated yet
+	if (spawnInstance == nullptr)
+	{
+		int x = rand() % 1400;
+		int y = 1600 - (rand() % 3200);
+
+		spawnInstance = GetWorld()->SpawnActor <ASpawnActor>(spawn, FVector((float)x, (float)y, 363.0f), GetActorRotation());
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -592,7 +601,8 @@ void AUnrealVRCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 
 	DOREPLIFETIME(AUnrealVRCharacter, Mesh1P);
 	//DOREPLIFETIME(AUnrealVRCharacter, bladeChar);
-	DOREPLIFETIME(AUnrealVRCharacter, particleSystem);
+	DOREPLIFETIME(AUnrealVRCharacter, particleSystem); //not needed?!
+	DOREPLIFETIME(AUnrealVRCharacter, spawnInstance);
 }
 
 
@@ -642,8 +652,7 @@ void AUnrealVRCharacter::Client_RTT_Test_Implementation()
 
 	FString str = TEXT("");
 	str.AppendInt(timer);
-	str.Append(TEXT(" ms, from player "));
-	str.AppendInt(this->ID);
+	str.Append(TEXT(" ms"));
 
 	GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Yellow, str);
 }

@@ -2,9 +2,8 @@
 #pragma once
 #include "GameFramework/Character.h"
 #include "SpawnActor.h"
-#include <chrono>
-#include <ctime>
 #include "ParticleDefinitions.h"
+#include "EngineUtils.h"
 #include "UnrealVRCharacter.generated.h"
 
 class UInputComponent;
@@ -34,8 +33,11 @@ class AUnrealVRCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FirstPersonCameraComponent;
 
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, Category = "SpawnObject")
 	TSubclassOf<ASpawnActor> spawn;
+
+	UPROPERTY(VisibleAnywhere, Category = "SpawnObject", Replicated)
+	AActor *spawnInstance;
 
 	UPROPERTY()
 	ASpawnActor *inHand;
@@ -199,7 +201,5 @@ public:
 	void Server_RTT_Test();
 	UFUNCTION(Client, Unreliable)
 	void Client_RTT_Test();
-
-
 };
 
