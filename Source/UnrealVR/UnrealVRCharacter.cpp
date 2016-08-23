@@ -60,8 +60,6 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 		Mesh1P->SetAnimInstanceClass(TmpHandsAnim.Object);
 	}
 
-
-
 	Mesh1P->SetOnlyOwnerSee(true);
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
@@ -101,7 +99,6 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 
 	particleSystemInstance = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleSystemInstance"));
 
-
 	spawn = ASpawnActor::StaticClass();
 }
 
@@ -109,15 +106,6 @@ void AUnrealVRCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
-
-	//spawn a spawnActor IFF none instanziated yet
-	if (spawnInstance == nullptr)
-	{
-		int x = rand() % 1400;
-		int y = 1600 - (rand() % 3200);
-
-		spawnInstance = GetWorld()->SpawnActor <ASpawnActor>(spawn, FVector((float)x, (float)y, 363.0f), GetActorRotation());
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -136,10 +124,11 @@ void AUnrealVRCharacter::SetupPlayerInputComponent(class UInputComponent* InputC
 	InputComponent->BindAction("MouseWheelUp", IE_Pressed, this, &AUnrealVRCharacter::mouseWheelUp);
 	InputComponent->BindAction("MouseWheelDown", IE_Pressed, this, &AUnrealVRCharacter::mouseWheelDown);
 	InputComponent->BindAction("ChangeColor", IE_Pressed, this, &AUnrealVRCharacter::SwitchColor);
-	InputComponent->BindAction("Spawn", IE_Pressed, this, &AUnrealVRCharacter::spawnObject);
-	InputComponent->BindAction("QuitGame", IE_Pressed, this, &AUnrealVRCharacter::QuitGame);
+	InputComponent->BindAction("1", IE_Pressed, this, &AUnrealVRCharacter::spawnObject);
+	InputComponent->BindAction("ESC", IE_Pressed, this, &AUnrealVRCharacter::QuitGame);
 
-	InputComponent->BindAction("RTTTest", IE_Pressed, this, &AUnrealVRCharacter::RTT_Test);
+	InputComponent->BindAction("2", IE_Pressed, this, &AUnrealVRCharacter::RTT_Test);
+	InputComponent->BindAction("3", IE_Pressed, this, &AUnrealVRCharacter::ReplicateSpawnTestStart);
 
 	InputComponent->BindAxis("MoveForward", this, &AUnrealVRCharacter::MoveForward);
 	InputComponent->BindAxis("MoveRight", this, &AUnrealVRCharacter::MoveRight);
@@ -423,6 +412,7 @@ void AUnrealVRCharacter::SwitchColor()
 {
 	if (inHand)
 	{
+		inHand->StartTimer();
 		Server_ChangeInHandColor(inHand);
 	}
 	//if i press the changeColor button and I have a ASpawnActor in the reticle, then change color in spot	
@@ -432,6 +422,7 @@ void AUnrealVRCharacter::SwitchColor()
 		ASpawnActor* actor = GetActorInFocus();
 		if (actor && !actor->IsInHand())
 		{
+			actor->StartTimer();
 			Server_ChangeInHandColor(actor);
 		}
 	}
@@ -479,8 +470,6 @@ void AUnrealVRCharacter::positionObject(AActor* actor, FVector location)
 /*								SPAWN OBJECT									*/
 void AUnrealVRCharacter::Server_SpawnObject_Implementation(FVector location)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Spawn Object called"));
-	
 	ASpawnActor* actor = GetWorld()->SpawnActor <ASpawnActor>(spawn, location, GetActorRotation());
 	actor->SetRandomColor();
 }
@@ -495,7 +484,7 @@ bool AUnrealVRCharacter::Server_SpawnObject_Validate(FVector location)
 /*								SPAWN PARTICLE EFFECT									*/
 void AUnrealVRCharacter::Server_SpawnParticleEffect_Implementation(AActor* start, AActor* end, int newID)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Emerald, TEXT("Particle Effect spawned"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, TEXT("Particle Effect spawned"));
 
 	Multicast_SpawnParticleEffect(start, end, newID);
 }
@@ -601,8 +590,8 @@ void AUnrealVRCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 
 	DOREPLIFETIME(AUnrealVRCharacter, Mesh1P);
 	//DOREPLIFETIME(AUnrealVRCharacter, bladeChar);
-	DOREPLIFETIME(AUnrealVRCharacter, particleSystem); //not needed?!
 	DOREPLIFETIME(AUnrealVRCharacter, spawnInstance);
+	DOREPLIFETIME(AUnrealVRCharacter, spawnActorReplicateTest);
 }
 
 
@@ -652,7 +641,46 @@ void AUnrealVRCharacter::Client_RTT_Test_Implementation()
 
 	FString str = TEXT("");
 	str.AppendInt(timer);
-	str.Append(TEXT(" ms"));
+	str.Append(TEXT(" ms, RTT TEST"));
 
 	GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Yellow, str);
+}
+
+
+
+
+
+void AUnrealVRCharacter::ReplicateSpawnTestStart()
+{
+	if (updateRaycastHit())
+	{
+		startTime = FDateTime::UtcNow();
+		Server_Replication_SpawnTest(hit.Location);
+	}
+}
+
+void AUnrealVRCharacter::ReplicateSpawnTestArrival()
+{
+	endTime = FDateTime::UtcNow();
+	timer = endTime.GetMillisecond() - startTime.GetMillisecond();
+
+	FString str = TEXT("");
+	str.AppendInt(timer);
+	str.Append(TEXT(" ms, replication test on spawning actor"));
+
+	GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Emerald, str);
+}
+
+void AUnrealVRCharacter::Server_Replication_SpawnTest_Implementation(FVector location)
+{
+	ASpawnActor* actor = GetWorld()->SpawnActor <ASpawnActor>(spawn, location, GetActorRotation());
+	actor->SetRandomColor();
+
+	spawnActorReplicateTest = actor;
+}
+
+
+bool AUnrealVRCharacter::Server_Replication_SpawnTest_Validate(FVector location)
+{
+	return true;
 }

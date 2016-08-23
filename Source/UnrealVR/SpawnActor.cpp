@@ -46,6 +46,7 @@ ASpawnActor::ASpawnActor()
 	}
 
 	currentMat = 1;
+	waiting = false;
 	UpdateMaterial();
 }
 
@@ -53,6 +54,7 @@ ASpawnActor::ASpawnActor()
 void ASpawnActor::BeginPlay()
 {
 	Super::BeginPlay();
+	waiting = false;
 }
 
 
@@ -74,14 +76,31 @@ UStaticMeshComponent* ASpawnActor::GetMesh() const
 void ASpawnActor::UpdateMaterial()
 {
 	mesh->SetMaterial(0, mats[currentMat]);
+
+	if (GetNetMode() == ENetMode::NM_Client && waiting)
+	{
+		//get the time of arrival here and print IF on client
+		waiting = false;
+		endTime = FDateTime::UtcNow();
+		timer = endTime.GetMillisecond() - startTime.GetMillisecond();
+
+		FString str = TEXT("");
+		str.AppendInt(timer);
+		str.Append(TEXT(" ms, replication test on variable change"));
+
+		GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Magenta, str);
+	}
 }
 
 void ASpawnActor::SwitchColors()
 {
 	currentMat = (currentMat + 1) % mats.Num();
 
-	//needs to be called manually,since in C++ the server does not call the RepNotify function automatically
-	UpdateMaterial();
+	//needs to be called manually,since in C++ the server does not call the RepNotify function automatically. CLIENTS DO, but not the server itself
+	if(GetNetMode() < ENetMode::NM_Client)
+	{
+		UpdateMaterial();
+	}
 }
 
 void ASpawnActor::SetRandomColor()
@@ -90,6 +109,12 @@ void ASpawnActor::SetRandomColor()
 
 	//needs to be called manually,since in C++ the server does not call the RepNotify function automatically
 	UpdateMaterial();
+}
+
+void ASpawnActor::StartTimer()
+{
+	waiting = true;
+	startTime = FDateTime::UtcNow();
 }
 
 void ASpawnActor::SetIsInHand(bool newVal)

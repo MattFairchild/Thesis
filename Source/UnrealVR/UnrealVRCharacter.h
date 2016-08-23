@@ -85,6 +85,7 @@ protected:
 	/** Quit the game */
 	void QuitGame();
 
+	
 	void spawnObject();
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_SpawnObject(FVector location);
@@ -93,6 +94,7 @@ protected:
 	void spawnParticleEffect(AActor* start, AActor* end);
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_SpawnParticleEffect(AActor* start, AActor* end, int newID);
+
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_SpawnParticleEffect(AActor* start, AActor* end, int newID);
@@ -195,6 +197,17 @@ public:
 
 	int32 timer;
 	FDateTime startTime, endTime;
+
+	UPROPERTY(ReplicatedUsing = ReplicateSpawnTestArrival)
+	ASpawnActor* spawnActorReplicateTest;
+
+	UFUNCTION()
+	void ReplicateSpawnTestArrival();
+	UFUNCTION()
+	void ReplicateSpawnTestStart();
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_Replication_SpawnTest(FVector location);
+
 
 	void RTT_Test();
 	UFUNCTION(Reliable, Server, WithValidation)

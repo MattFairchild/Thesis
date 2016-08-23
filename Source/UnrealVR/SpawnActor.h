@@ -26,6 +26,11 @@ private:
 	UFUNCTION()
 	void UpdateMaterial();
 
+	UPROPERTY(Replicated)
+	bool waiting;
+	int32 timer;
+	FDateTime startTime, endTime;
+
 public:	
 	// Sets default values for this actor's properties
 	ASpawnActor();
@@ -37,6 +42,8 @@ public:
 	bool IsInHand() const;
 
 	void SwitchColors();
+
+	void StartTimer();
 
 	void SetRandomColor();
 
