@@ -100,12 +100,40 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	particleSystemInstance = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleSystemInstance"));
 
 	spawn = ASpawnActor::StaticClass();
+
+	spawnWaiting = false;
+	rttwaiting = false;
+	spawniterations = 1;
+	rttiterations = 1;
+}
+
+AUnrealVRCharacter::~AUnrealVRCharacter()
+{
+	if (spawnfile.is_open())
+	{
+		spawnfile.close();
+	}
+
+	if (rttfile.is_open())
+	{
+		rttfile.close();
+	}
 }
 
 void AUnrealVRCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
+
+	if (!spawnfile.is_open())
+	{
+		spawnfile.open("C:/Users/mfa/Documents/Projects/Thesis/SPAWNLOG.txt", std::ofstream::out | std::ofstream::app);
+	}
+
+	if (!rttfile.is_open())
+	{
+		rttfile.open("C:/Users/mfa/Documents/Projects/Thesis/RTTLOG.txt", std::ofstream::out | std::ofstream::app);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -124,11 +152,13 @@ void AUnrealVRCharacter::SetupPlayerInputComponent(class UInputComponent* InputC
 	InputComponent->BindAction("MouseWheelUp", IE_Pressed, this, &AUnrealVRCharacter::mouseWheelUp);
 	InputComponent->BindAction("MouseWheelDown", IE_Pressed, this, &AUnrealVRCharacter::mouseWheelDown);
 	InputComponent->BindAction("ChangeColor", IE_Pressed, this, &AUnrealVRCharacter::SwitchColor);
-	InputComponent->BindAction("1", IE_Pressed, this, &AUnrealVRCharacter::spawnObject);
 	InputComponent->BindAction("ESC", IE_Pressed, this, &AUnrealVRCharacter::QuitGame);
 
+	InputComponent->BindAction("1", IE_Pressed, this, &AUnrealVRCharacter::ReplicateSpawnTestStart);
 	InputComponent->BindAction("2", IE_Pressed, this, &AUnrealVRCharacter::RTT_Test);
-	InputComponent->BindAction("3", IE_Pressed, this, &AUnrealVRCharacter::ReplicateSpawnTestStart);
+	InputComponent->BindAction("8", IE_Pressed, this, &AUnrealVRCharacter::LogSpawn);
+	InputComponent->BindAction("9", IE_Pressed, this, &AUnrealVRCharacter::LogRTT);
+
 
 	InputComponent->BindAxis("MoveForward", this, &AUnrealVRCharacter::MoveForward);
 	InputComponent->BindAxis("MoveRight", this, &AUnrealVRCharacter::MoveRight);
@@ -592,6 +622,7 @@ void AUnrealVRCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	//DOREPLIFETIME(AUnrealVRCharacter, bladeChar);
 	DOREPLIFETIME(AUnrealVRCharacter, spawnInstance);
 	DOREPLIFETIME(AUnrealVRCharacter, spawnActorReplicateTest);
+	DOREPLIFETIME(AUnrealVRCharacter, spawnActorReplicateTestWithLog);
 }
 
 
@@ -617,33 +648,59 @@ void AUnrealVRCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 void AUnrealVRCharacter::RTT_Test()
 {
 	startTime = FDateTime::UtcNow();
-	Server_RTT_Test();
+
+	if (!rttwaiting)
+	{
+		rttwaiting = true;
+		Server_RTT_Test();
+	}
 }
 
 
-
-void AUnrealVRCharacter::Server_RTT_Test_Implementation()
+void AUnrealVRCharacter::Server_RTT_Test_Implementation(bool log)
 {
-	Client_RTT_Test();
+	//if i want to log, then i must take the iterations into account
+	if (log && rttiterations > 0)
+	{
+		Client_RTT_Test(true);
+	}
+	//iterations not relevant if no logging
+	else if (!log)
+	{
+		Client_RTT_Test(false);
+	}
 }
 
 
-bool AUnrealVRCharacter::Server_RTT_Test_Validate()
+bool AUnrealVRCharacter::Server_RTT_Test_Validate(bool log)
 {
 	return true;
 }
 
 
-void AUnrealVRCharacter::Client_RTT_Test_Implementation()
+void AUnrealVRCharacter::Client_RTT_Test_Implementation(bool log)
 {
 	endTime = FDateTime::UtcNow();
 	timer = endTime.GetMillisecond() - startTime.GetMillisecond();
+	rttwaiting = false;
 
 	FString str = TEXT("");
 	str.AppendInt(timer);
 	str.Append(TEXT(" ms, RTT TEST"));
 
-	GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Yellow, str);
+	GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Yellow, str);	
+	
+	if (log && rttfile.is_open())
+	{
+		rttfile << timer << std::endl;
+		rttiterations--;
+
+		if (rttiterations > 0)
+		{
+			
+			Server_RTT_Test(true);
+		}
+	}
 }
 
 
@@ -683,4 +740,68 @@ void AUnrealVRCharacter::Server_Replication_SpawnTest_Implementation(FVector loc
 bool AUnrealVRCharacter::Server_Replication_SpawnTest_Validate(FVector location)
 {
 	return true;
+}
+
+
+
+void AUnrealVRCharacter::ReplicateSpawnTestStartWithLog()
+{
+	if (updateRaycastHit())
+	{
+		startTime = FDateTime::UtcNow();
+		Server_Replication_SpawnTestWithLog(hit.Location); //RANDOM LOCATION BETTER ?
+	}
+}
+void AUnrealVRCharacter::ReplicateSpawnTestArrivalWithLog()
+{
+	endTime = FDateTime::UtcNow();
+	timer = endTime.GetMillisecond() - startTime.GetMillisecond();
+
+	if (spawnfile.is_open())
+	{
+		spawnfile << timer << std::endl;
+	}
+
+	FString str = TEXT("");
+	str.AppendInt(timer);
+	str.Append(TEXT(" ms, replication test on spawning actor"));
+
+	GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Emerald, str);
+
+	// recursively write
+	if (spawniterations > 0)
+	{
+		spawniterations--;
+		ReplicateSpawnTestStartWithLog();
+	}
+}
+void AUnrealVRCharacter::Server_Replication_SpawnTestWithLog_Implementation(FVector location)
+{
+	ASpawnActor* actor = GetWorld()->SpawnActor <ASpawnActor>(spawn, location, GetActorRotation());
+	actor->SetRandomColor();
+
+	spawnActorReplicateTestWithLog = actor;
+}
+bool AUnrealVRCharacter::Server_Replication_SpawnTestWithLog_Validate(FVector location)
+{
+	return true;
+}
+
+
+
+
+
+
+
+void AUnrealVRCharacter::LogRTT()
+{
+	rttiterations = 100;
+	Server_RTT_Test(true);
+}
+
+
+void AUnrealVRCharacter::LogSpawn()
+{
+	spawniterations = 100;
+	ReplicateSpawnTestStartWithLog();
 }

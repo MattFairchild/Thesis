@@ -4,6 +4,8 @@
 #include "SpawnActor.h"
 #include "ParticleDefinitions.h"
 #include "EngineUtils.h"
+#include <fstream>
+#include "CoreMisc.h"
 #include "UnrealVRCharacter.generated.h"
 
 class UInputComponent;
@@ -58,6 +60,7 @@ class AUnrealVRCharacter : public ACharacter
 	int ID;
 public:
 	AUnrealVRCharacter();
+	~AUnrealVRCharacter();
 
 	virtual void BeginPlay();
 
@@ -191,15 +194,21 @@ public:
 
 	/*
 	
-			FUNCTIONS  AND VARIABLES TO CHECK FOR RTT TDT ETC.		
+			FUNCTIONS  AND VARIABLES TO CHECK FOR RTT TDT ETC. AND LOG THEM		
 	
 	*/
 
 	int32 timer;
+	bool spawnWaiting, rttwaiting;
+	int spawniterations, rttiterations;
 	FDateTime startTime, endTime;
+	std::ofstream spawnfile, rttfile;
 
 	UPROPERTY(ReplicatedUsing = ReplicateSpawnTestArrival)
 	ASpawnActor* spawnActorReplicateTest;
+
+	UPROPERTY(ReplicatedUsing = ReplicateSpawnTestArrivalWithLog)
+	ASpawnActor* spawnActorReplicateTestWithLog;
 
 	UFUNCTION()
 	void ReplicateSpawnTestArrival();
@@ -208,11 +217,23 @@ public:
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_Replication_SpawnTest(FVector location);
 
+	UFUNCTION()
+	void ReplicateSpawnTestArrivalWithLog();
+	UFUNCTION()
+	void ReplicateSpawnTestStartWithLog();
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_Replication_SpawnTestWithLog(FVector location);
+
 
 	void RTT_Test();
 	UFUNCTION(Reliable, Server, WithValidation)
-	void Server_RTT_Test();
+	void Server_RTT_Test(bool log = false);
 	UFUNCTION(Client, Unreliable)
-	void Client_RTT_Test();
+	void Client_RTT_Test(bool log);
+
+	UFUNCTION()
+	void LogRTT();
+	UFUNCTION()
+	void LogSpawn();
 };
 
