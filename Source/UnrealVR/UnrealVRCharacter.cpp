@@ -36,13 +36,13 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 
 	// Create a CameraComponent
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->AttachParent = this->RootComponent;
+	FirstPersonCameraComponent->AttachTo(this->RootComponent);
 	FirstPersonCameraComponent->RelativeLocation = FVector(-39.56f, 1.75f, 64.f); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
-	Mesh1P->AttachParent = FirstPersonCameraComponent;
+	Mesh1P->AttachTo(FirstPersonCameraComponent);
 
 	Mesh1P->RelativeRotation = FRotator(5.5f, -20.19f, 5.2f);
 	Mesh1P->RelativeLocation = FVector(-0.5f, -4.4f, -155.7f);
@@ -67,7 +67,7 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 
 	// Create the character that will be seen by any other particiapnts in the session (not seen by the owner)
 	avatar = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh Component through Code"));
-	avatar->AttachParent = FirstPersonCameraComponent;
+	avatar->AttachTo(FirstPersonCameraComponent);
 	
 	//static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/InfinityBladeWarriors/Character/CompleteCharacters/SK_CharM_Robo.SK_CharM_Robo'"));
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/Mannequin/Character/Mesh/SK_Mannequin.SK_Mannequin'"));
