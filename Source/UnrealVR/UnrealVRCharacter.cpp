@@ -697,8 +697,13 @@ void AUnrealVRCharacter::Client_RTT_Test_Implementation(bool log)
 
 		if (rttiterations > 0)
 		{
-			
-			Server_RTT_Test(true);
+			startTime = FDateTime::UtcNow();
+
+			if (!rttwaiting)
+			{
+				rttwaiting = true;
+				Server_RTT_Test(true);
+			}
 		}
 	}
 }
