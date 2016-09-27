@@ -3,6 +3,7 @@
 #include "GameFramework/Character.h"
 #include "SpawnActor.h"
 #include "ParticleDefinitions.h"
+#include "Blueprint/UserWidget.h"
 #include "EngineUtils.h"
 #include <fstream>
 #include "CoreMisc.h"

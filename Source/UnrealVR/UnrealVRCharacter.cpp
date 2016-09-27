@@ -4,6 +4,7 @@
 #include "UnrealVRCharacter.h"
 #include "UnrealVRProjectile.h"
 #include "Shape.h"
+#include <string>
 #include "Animation/AnimInstance.h"
 #include "GameFramework/InputSettings.h"
 #include "UnrealVRHUD.h"
@@ -87,7 +88,6 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	avatar->RelativeLocation = FVector(50.0f, 0.0f, -157.0f);
 	avatar->RelativeRotation = FRotator(0.0f, -90.0f, 0.0f);
 
-
 	//Create the particle system component.
 	ConstructorHelpers::FObjectFinder<UParticleSystem> ArbitraryParticleName(TEXT("ParticleSystem'/Game/ParticleSystem/ParticleSystems/P_Beam.P_Beam'"));
 	particleSystem = CreateDefaultSubobject<UParticleSystem>(TEXT("ParticleSystemDefault"));
@@ -125,14 +125,20 @@ void AUnrealVRCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
+	FString pcName = FPlatformMisc::GameDir();
+	std::string pathPrelim = TCHAR_TO_UTF8(*pcName);
+
+	std::string spawnFileName = pathPrelim + "Spawntimes.txt";
+	std::string rttFileName = pathPrelim + "RTTtimes.txt";
+
 	if (!spawnfile.is_open())
 	{
-		spawnfile.open("C:/Users/mfa/Documents/Projects/Thesis/SPAWNLOG.txt", std::ofstream::out | std::ofstream::app);
+		spawnfile.open(spawnFileName, std::ofstream::out | std::ofstream::app);
 	}
 
 	if (!rttfile.is_open())
 	{
-		rttfile.open("C:/Users/mfa/Documents/Projects/Thesis/RTTLOG.txt", std::ofstream::out | std::ofstream::app);
+		rttfile.open(rttFileName, std::ofstream::out | std::ofstream::app);
 	}
 }
 
@@ -692,7 +698,7 @@ void AUnrealVRCharacter::Client_RTT_Test_Implementation(bool log)
 	
 	if (log && rttfile.is_open())
 	{
-		rttfile << timer << std::endl;
+		rttfile << "RTTTEst from \"" << FGenericPlatformProcess::ComputerName() << "\": " << timer << std::endl;
 		rttiterations--;
 
 		if (rttiterations > 0)
@@ -728,7 +734,7 @@ void AUnrealVRCharacter::ReplicateSpawnTestArrival()
 
 	FString str = TEXT("");
 	str.AppendInt(timer);
-	str.Append(TEXT(" ms, replication test on spawning actor"));
+	str.Append(TEXT(" ms, replication test on spawning actor "));
 
 	GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Emerald, str);
 }
@@ -764,7 +770,7 @@ void AUnrealVRCharacter::ReplicateSpawnTestArrivalWithLog()
 
 	if (spawnfile.is_open())
 	{
-		spawnfile << timer << std::endl;
+		spawnfile << "Spawn time started from \"" << FGenericPlatformProcess::ComputerName() << "\": " << timer << std::endl;
 	}
 
 	FString str = TEXT("");
