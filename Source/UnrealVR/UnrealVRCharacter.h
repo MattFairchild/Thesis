@@ -56,6 +56,8 @@ class AUnrealVRCharacter : public ACharacter
 	float ZoomFactor;
 	FHitResult hit;
 
+	int numClients, respondedClients;
+
 	AActor* openMenu;
 
 	int ID;
@@ -203,13 +205,26 @@ public:
 	bool spawnWaiting, rttwaiting;
 	int spawniterations, rttiterations;
 	FDateTime startTime, endTime;
-	std::ofstream spawnfile, rttfile;
+	std::ofstream spawnfile, rttfile, tdtfile;
 
 	UPROPERTY(ReplicatedUsing = ReplicateSpawnTestArrival)
 	ASpawnActor* spawnActorReplicateTest;
 
 	UPROPERTY(ReplicatedUsing = ReplicateSpawnTestArrivalWithLog)
 	ASpawnActor* spawnActorReplicateTestWithLog;
+
+	/* REGISTER WHEN NEW PLAYER JOINS */
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_AddNewPlayer();
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_RemoveDisconnectedPlayer();
+
+
+	/* TDT TEST */
+	UFUNCTION(Reliable, NetMulticast)
+	void Multicast_TDTTest();
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_AnswerTDTTest(int id);
 
 	UFUNCTION()
 	void ReplicateSpawnTestArrival();

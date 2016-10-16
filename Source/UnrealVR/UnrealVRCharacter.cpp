@@ -105,10 +105,15 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	rttwaiting = false;
 	spawniterations = 1;
 	rttiterations = 1;
+
+	numClients = 0;
+	respondedClients = 0;
 }
 
 AUnrealVRCharacter::~AUnrealVRCharacter()
 {
+	Server_RemoveDisconnectedPlayer();
+
 	if (spawnfile.is_open())
 	{
 		spawnfile.close();
@@ -117,6 +122,11 @@ AUnrealVRCharacter::~AUnrealVRCharacter()
 	if (rttfile.is_open())
 	{
 		rttfile.close();
+	}
+
+	if (tdtfile.is_open())
+	{
+		tdtfile.close();
 	}
 }
 
@@ -128,17 +138,26 @@ void AUnrealVRCharacter::BeginPlay()
 	FString pcName = FPlatformMisc::GameDir();
 	std::string pathPrelim = TCHAR_TO_UTF8(*pcName);
 
-	std::string spawnFileName = pathPrelim + "Spawntimes.txt";
-	std::string rttFileName = pathPrelim + "RTTtimes.txt";
+	std::string spawnFileName = pathPrelim + "Spawntimes.csv";
+	std::string rttFileName = pathPrelim + "RTTtimes.csv";
+	std::string tdtFileName = pathPrelim + "TDTtimes.csv";
 
 	if (!spawnfile.is_open())
 	{
 		spawnfile.open(spawnFileName, std::ofstream::out | std::ofstream::app);
+		spawnfile << "Computername;spawn time" << std::endl;
 	}
 
 	if (!rttfile.is_open())
 	{
 		rttfile.open(rttFileName, std::ofstream::out | std::ofstream::app);
+		rttfile << "Computername;RTT time" << std::endl;
+	}
+
+	if (!tdtfile.is_open())
+	{
+		tdtfile.open(tdtFileName, std::ofstream::out | std::ofstream::app);
+		tdtfile << "Computername;TDT time" << std::endl;
 	}
 }
 
@@ -164,6 +183,7 @@ void AUnrealVRCharacter::SetupPlayerInputComponent(class UInputComponent* InputC
 	InputComponent->BindAction("2", IE_Pressed, this, &AUnrealVRCharacter::RTT_Test);
 	InputComponent->BindAction("8", IE_Pressed, this, &AUnrealVRCharacter::LogSpawn);
 	InputComponent->BindAction("9", IE_Pressed, this, &AUnrealVRCharacter::LogRTT);
+	InputComponent->BindAction("6", IE_Pressed, this, &AUnrealVRCharacter::Multicast_TDTTest);
 
 
 	InputComponent->BindAxis("MoveForward", this, &AUnrealVRCharacter::MoveForward);
@@ -503,6 +523,75 @@ void AUnrealVRCharacter::positionObject(AActor* actor, FVector location)
 
 
 
+void AUnrealVRCharacter::Server_AddNewPlayer_Implementation()
+{
+	if (this->GetNetMode() < ENetMode::NM_Client)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Silver, TEXT("Player added"));
+		numClients++;
+	}
+}
+
+bool AUnrealVRCharacter::Server_AddNewPlayer_Validate()
+{
+	return true;
+}
+
+void AUnrealVRCharacter::Server_RemoveDisconnectedPlayer_Implementation()
+{
+	if (this->GetNetMode() < ENetMode::NM_Client)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Silver, TEXT("Player removed"));
+		numClients--;
+	}
+}
+
+bool AUnrealVRCharacter::Server_RemoveDisconnectedPlayer_Validate()
+{
+	return true;
+}
+
+
+
+
+void AUnrealVRCharacter::Multicast_TDTTest_Implementation()
+{
+	if (this->GetNetMode() < ENetMode::NM_Client)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("Starting TDT Test"));
+
+		startTime = FDateTime::UtcNow();
+	}
+
+	Server_AnswerTDTTest(ID);
+}
+
+
+void AUnrealVRCharacter::Server_AnswerTDTTest_Implementation(int id)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("Responding to tdt test from server . . ."));
+
+	respondedClients++;
+
+	if (respondedClients == (numClients-1))
+	{
+		endTime = FDateTime::UtcNow();
+		timer = endTime.GetMillisecond() - startTime.GetMillisecond();
+		tdtfile << FGenericPlatformProcess::ComputerName() << ";" << timer << std::endl;
+
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("GOT ALL THE CLIENTS"));
+		respondedClients = 0;
+	}
+}
+
+bool AUnrealVRCharacter::Server_AnswerTDTTest_Validate(int id)
+{
+	return true;
+}
+
+
+
+
 /*								SPAWN OBJECT									*/
 void AUnrealVRCharacter::Server_SpawnObject_Implementation(FVector location)
 {
@@ -698,7 +787,7 @@ void AUnrealVRCharacter::Client_RTT_Test_Implementation(bool log)
 	
 	if (log && rttfile.is_open())
 	{
-		rttfile << "RTTTEst from \"" << FGenericPlatformProcess::ComputerName() << "\": " << timer << std::endl;
+		rttfile << FGenericPlatformProcess::ComputerName() << ";" << timer << std::endl;
 		rttiterations--;
 
 		if (rttiterations > 0)
@@ -770,7 +859,7 @@ void AUnrealVRCharacter::ReplicateSpawnTestArrivalWithLog()
 
 	if (spawnfile.is_open())
 	{
-		spawnfile << "Spawn time started from \"" << FGenericPlatformProcess::ComputerName() << "\": " << timer << std::endl;
+		spawnfile << FGenericPlatformProcess::ComputerName() << ";" << timer << std::endl;
 	}
 
 	FString str = TEXT("");

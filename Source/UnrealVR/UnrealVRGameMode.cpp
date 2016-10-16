@@ -27,6 +27,7 @@ void AUnrealVRGameMode::PostLogin(APlayerController* newPlayer)
 	if (character)
 	{
 		character->SetID(nextID++);
+		character->Server_AddNewPlayer();
 
 		FString str = TEXT("New Player registered, num: ");
 		str.AppendInt(nextID);
