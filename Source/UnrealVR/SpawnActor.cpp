@@ -2,6 +2,7 @@
 
 #include "UnrealVR.h"
 #include "SpawnActor.h"
+#include <string>
 
 
 // Sets default values
@@ -45,9 +46,23 @@ ASpawnActor::ASpawnActor()
 		mats.Add(mat3.Object);
 	}
 
+	rounds = 1;
 	currentMat = 1;
 	waiting = false;
+
+	FString pcName = FPlatformMisc::GameDir();
+	std::string pathPrelim = TCHAR_TO_UTF8(*pcName);
+	filename = pathPrelim + "VariableChange.csv";
+
 	UpdateMaterial();
+}
+
+ASpawnActor::~ASpawnActor()
+{
+	if (colorchangefile.is_open())
+	{
+		colorchangefile.close();
+	}
 }
 
 // Called when the game starts or when spawned
@@ -88,7 +103,30 @@ void ASpawnActor::UpdateMaterial()
 		str.AppendInt(timer);
 		str.Append(TEXT(" ms, replication test on variable change"));
 
+		//write the time into the file
+		{
+			if (!colorchangefile.is_open())
+			{
+				colorchangefile.open(filename, std::ofstream::out | std::ofstream::app);
+			}
+
+			colorchangefile << FGenericPlatformProcess::ComputerName() << ";" << timer << std::endl;
+
+			if (colorchangefile.is_open())
+			{
+				colorchangefile.close();
+			}
+		}
+
+
 		GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Magenta, str);
+
+		rounds--;
+		if (rounds > 0)
+		{
+			StartTimer();
+			Server_SwitchColors();
+		}
 	}
 }
 
@@ -125,4 +163,17 @@ void ASpawnActor::SetIsInHand(bool newVal)
 bool ASpawnActor::IsInHand() const
 {
 	return isInHand;
+}
+
+void ASpawnActor::Server_SwitchColors_Implementation()
+{
+	currentMat = (currentMat + 1) % mats.Num();
+
+	//needs to be called manually,since in C++ the server does not call the RepNotify function automatically. CLIENTS DO, but not the server itself
+	UpdateMaterial();
+}
+
+bool ASpawnActor::Server_SwitchColors_Validate()
+{
+	return true;
 }

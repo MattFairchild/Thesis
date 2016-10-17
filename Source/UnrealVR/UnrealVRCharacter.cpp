@@ -184,6 +184,7 @@ void AUnrealVRCharacter::SetupPlayerInputComponent(class UInputComponent* InputC
 	InputComponent->BindAction("8", IE_Pressed, this, &AUnrealVRCharacter::LogSpawn);
 	InputComponent->BindAction("9", IE_Pressed, this, &AUnrealVRCharacter::LogRTT);
 	InputComponent->BindAction("6", IE_Pressed, this, &AUnrealVRCharacter::Multicast_TDTTest);
+	InputComponent->BindAction("7", IE_Pressed, this, &AUnrealVRCharacter::ChangeVariableTest);
 
 
 	InputComponent->BindAxis("MoveForward", this, &AUnrealVRCharacter::MoveForward);
@@ -469,6 +470,7 @@ void AUnrealVRCharacter::SwitchColor()
 	if (inHand)
 	{
 		inHand->StartTimer();
+		inHand->rounds = 1;
 		Server_ChangeInHandColor(inHand);
 	}
 	//if i press the changeColor button and I have a ASpawnActor in the reticle, then change color in spot	
@@ -521,18 +523,22 @@ void AUnrealVRCharacter::positionObject(AActor* actor, FVector location)
 /*								RPC  FUNCTIONS									*/
 /********************************************************************************/
 
-
-
-void AUnrealVRCharacter::Server_AddNewPlayer_Implementation()
+void AUnrealVRCharacter::AddNewPlayer()
 {
-	if (this->GetNetMode() < ENetMode::NM_Client)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Silver, TEXT("Player added"));
-		numClients++;
-	}
+	Server_AddNewPlayer(ID);
 }
 
-bool AUnrealVRCharacter::Server_AddNewPlayer_Validate()
+void AUnrealVRCharacter::Server_AddNewPlayer_Implementation(int id)
+{
+	if (id > numClients)
+	{
+		numClients = id;
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Silver, TEXT("Player added"));
+	}
+
+}
+
+bool AUnrealVRCharacter::Server_AddNewPlayer_Validate(int id)
 {
 	return true;
 }
@@ -904,4 +910,19 @@ void AUnrealVRCharacter::LogSpawn()
 {
 	spawniterations = 100;
 	ReplicateSpawnTestStartWithLog();
+}
+
+
+
+
+
+void AUnrealVRCharacter::ChangeVariableTest()
+{
+	if (inHand)
+	{
+		inHand->StartTimer();
+		inHand->rounds = 100;
+		Server_ChangeInHandColor(inHand);
+	}
+
 }

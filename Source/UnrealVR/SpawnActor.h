@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include <fstream>
 #include "SpawnActor.generated.h"
 
 UCLASS()
@@ -31,9 +32,15 @@ private:
 	int32 timer;
 	FDateTime startTime, endTime;
 
+	std::ofstream colorchangefile;
+	std::string filename;
+public:
+	int32 rounds;
+
 public:	
 	// Sets default values for this actor's properties
 	ASpawnActor();
+	~ASpawnActor();
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -48,6 +55,9 @@ public:
 	void SetRandomColor();
 
 	void SetIsInHand(bool newVal);
+
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_SwitchColors();
 
 	//function to set all the replicated variables into
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;

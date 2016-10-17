@@ -200,7 +200,6 @@ public:
 			FUNCTIONS  AND VARIABLES TO CHECK FOR RTT TDT ETC. AND LOG THEM		
 	
 	*/
-
 	int32 timer;
 	bool spawnWaiting, rttwaiting;
 	int spawniterations, rttiterations;
@@ -213,9 +212,13 @@ public:
 	UPROPERTY(ReplicatedUsing = ReplicateSpawnTestArrivalWithLog)
 	ASpawnActor* spawnActorReplicateTestWithLog;
 
+	UFUNCTION()
+	void ChangeVariableTest();
+
 	/* REGISTER WHEN NEW PLAYER JOINS */
+	void AddNewPlayer();
 	UFUNCTION(Reliable, Server, WithValidation)
-	void Server_AddNewPlayer();
+	void Server_AddNewPlayer(int id);
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_RemoveDisconnectedPlayer();
 
