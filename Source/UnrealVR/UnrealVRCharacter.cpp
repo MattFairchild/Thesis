@@ -530,12 +530,10 @@ void AUnrealVRCharacter::AddNewPlayer()
 
 void AUnrealVRCharacter::Server_AddNewPlayer_Implementation(int id)
 {
-	if (id > numClients)
-	{
-		numClients = id;
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Silver, TEXT("Player added"));
-	}
-
+	if(id >= numClients)
+		numClients = id+1; // plus 1 because the counter will start at 0 for the clients
+	
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Silver, TEXT("Player added"));
 }
 
 bool AUnrealVRCharacter::Server_AddNewPlayer_Validate(int id)
@@ -545,11 +543,8 @@ bool AUnrealVRCharacter::Server_AddNewPlayer_Validate(int id)
 
 void AUnrealVRCharacter::Server_RemoveDisconnectedPlayer_Implementation()
 {
-	if (this->GetNetMode() < ENetMode::NM_Client)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Silver, TEXT("Player removed"));
-		numClients--;
-	}
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Silver, TEXT("Player removed"));
+	numClients--;
 }
 
 bool AUnrealVRCharacter::Server_RemoveDisconnectedPlayer_Validate()
@@ -560,26 +555,41 @@ bool AUnrealVRCharacter::Server_RemoveDisconnectedPlayer_Validate()
 
 
 
+void AUnrealVRCharacter::TDTTest()
+{
+	Server_StartTDTTest();
+}
+
+void AUnrealVRCharacter::Server_StartTDTTest_Implementation()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("Starting TDT Test"));
+	startTime = FDateTime::UtcNow();
+	Multicast_TDTTest();
+}
+
+bool AUnrealVRCharacter::Server_StartTDTTest_Validate()
+{
+	return true;
+}
+
 void AUnrealVRCharacter::Multicast_TDTTest_Implementation()
 {
-	if (this->GetNetMode() < ENetMode::NM_Client)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("Starting TDT Test"));
-
-		startTime = FDateTime::UtcNow();
-	}
-
-	Server_AnswerTDTTest(ID);
+	Client_AnswerTDTTest();
 }
 
 
-void AUnrealVRCharacter::Server_AnswerTDTTest_Implementation(int id)
+void AUnrealVRCharacter::Client_AnswerTDTTest_Implementation()
+{
+	Server_ReceiveTDTAnswers();
+}
+
+void AUnrealVRCharacter::Server_ReceiveTDTAnswers_Implementation()
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("Responding to tdt test from server . . ."));
 
 	respondedClients++;
 
-	if (respondedClients == (numClients-1))
+	if (respondedClients == numClients)
 	{
 		endTime = FDateTime::UtcNow();
 		timer = endTime.GetMillisecond() - startTime.GetMillisecond();
@@ -590,10 +600,11 @@ void AUnrealVRCharacter::Server_AnswerTDTTest_Implementation(int id)
 	}
 }
 
-bool AUnrealVRCharacter::Server_AnswerTDTTest_Validate(int id)
+bool AUnrealVRCharacter::Server_ReceiveTDTAnswers_Validate()
 {
 	return true;
 }
+
 
 
 

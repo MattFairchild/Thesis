@@ -224,10 +224,15 @@ public:
 
 
 	/* TDT TEST */
+	void TDTTest();
+	UFUNCTION(Reliable, Server, WithValidation)
+	void Server_StartTDTTest();
 	UFUNCTION(Reliable, NetMulticast)
 	void Multicast_TDTTest();
+	UFUNCTION(Reliable, Client)
+	void Client_AnswerTDTTest();
 	UFUNCTION(Reliable, Server, WithValidation)
-	void Server_AnswerTDTTest(int id);
+	void Server_ReceiveTDTAnswers();
 
 	UFUNCTION()
 	void ReplicateSpawnTestArrival();
