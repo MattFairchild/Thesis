@@ -63,9 +63,9 @@ class AUnrealVRCharacter : public ACharacter
 	int ID;
 public:
 	AUnrealVRCharacter();
-	~AUnrealVRCharacter();
 
 	virtual void BeginPlay();
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason);
 
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
@@ -219,6 +219,8 @@ public:
 	void AddNewPlayer();
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_AddNewPlayer(int id);
+
+	void removePlayerOnDisconnect();
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_RemoveDisconnectedPlayer();
 

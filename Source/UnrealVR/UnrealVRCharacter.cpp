@@ -37,13 +37,13 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 
 	// Create a CameraComponent
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->AttachTo(this->RootComponent);
+	FirstPersonCameraComponent->SetupAttachment(this->RootComponent);
 	FirstPersonCameraComponent->RelativeLocation = FVector(-39.56f, 1.75f, 64.f); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
-	Mesh1P->AttachTo(FirstPersonCameraComponent);
+	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
 
 	Mesh1P->RelativeRotation = FRotator(5.5f, -20.19f, 5.2f);
 	Mesh1P->RelativeLocation = FVector(-0.5f, -4.4f, -155.7f);
@@ -68,7 +68,7 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 
 	// Create the character that will be seen by any other particiapnts in the session (not seen by the owner)
 	avatar = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh Component through Code"));
-	avatar->AttachTo(FirstPersonCameraComponent);
+	avatar->SetupAttachment(FirstPersonCameraComponent);
 	
 	//static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/InfinityBladeWarriors/Character/CompleteCharacters/SK_CharM_Robo.SK_CharM_Robo'"));
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/Mannequin/Character/Mesh/SK_Mannequin.SK_Mannequin'"));
@@ -110,26 +110,6 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	respondedClients = 0;
 }
 
-AUnrealVRCharacter::~AUnrealVRCharacter()
-{
-	Server_RemoveDisconnectedPlayer();
-
-	if (spawnfile.is_open())
-	{
-		spawnfile.close();
-	}
-
-	if (rttfile.is_open())
-	{
-		rttfile.close();
-	}
-
-	if (tdtfile.is_open())
-	{
-		tdtfile.close();
-	}
-}
-
 void AUnrealVRCharacter::BeginPlay()
 {
 	// Call the base class  
@@ -161,10 +141,31 @@ void AUnrealVRCharacter::BeginPlay()
 	}
 }
 
+void AUnrealVRCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	removePlayerOnDisconnect();
+
+	if (spawnfile.is_open())
+	{
+		spawnfile.close();
+	}
+
+	if (rttfile.is_open())
+	{
+		rttfile.close();
+	}
+
+	if (tdtfile.is_open())
+	{
+		tdtfile.close();
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Input
-void AUnrealVRCharacter::SetupPlayerInputComponent(class UInputComponent* InputComponent)
+void AUnrealVRCharacter::SetupPlayerInputComponent(class UInputComponent* inputComponent)
 {
+	Super::SetupPlayerInputComponent(inputComponent);
 	// set up game play key bindings
 	check(InputComponent);
 
@@ -183,7 +184,7 @@ void AUnrealVRCharacter::SetupPlayerInputComponent(class UInputComponent* InputC
 	InputComponent->BindAction("2", IE_Pressed, this, &AUnrealVRCharacter::RTT_Test);
 	InputComponent->BindAction("8", IE_Pressed, this, &AUnrealVRCharacter::LogSpawn);
 	InputComponent->BindAction("9", IE_Pressed, this, &AUnrealVRCharacter::LogRTT);
-	InputComponent->BindAction("6", IE_Pressed, this, &AUnrealVRCharacter::Multicast_TDTTest);
+	InputComponent->BindAction("6", IE_Pressed, this, &AUnrealVRCharacter::TDTTest);
 	InputComponent->BindAction("7", IE_Pressed, this, &AUnrealVRCharacter::ChangeVariableTest);
 
 
@@ -541,6 +542,11 @@ bool AUnrealVRCharacter::Server_AddNewPlayer_Validate(int id)
 	return true;
 }
 
+void AUnrealVRCharacter::removePlayerOnDisconnect()
+{
+	Server_RemoveDisconnectedPlayer();
+}
+
 void AUnrealVRCharacter::Server_RemoveDisconnectedPlayer_Implementation()
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Silver, TEXT("Player removed"));
@@ -566,7 +572,6 @@ void AUnrealVRCharacter::Server_StartTDTTest_Implementation()
 	startTime = FDateTime::UtcNow();
 	Multicast_TDTTest();
 }
-
 bool AUnrealVRCharacter::Server_StartTDTTest_Validate()
 {
 	return true;
@@ -585,8 +590,6 @@ void AUnrealVRCharacter::Client_AnswerTDTTest_Implementation()
 
 void AUnrealVRCharacter::Server_ReceiveTDTAnswers_Implementation()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("Responding to tdt test from server . . ."));
-
 	respondedClients++;
 
 	if (respondedClients == numClients)
@@ -595,11 +598,10 @@ void AUnrealVRCharacter::Server_ReceiveTDTAnswers_Implementation()
 		timer = endTime.GetMillisecond() - startTime.GetMillisecond();
 		tdtfile << FGenericPlatformProcess::ComputerName() << ";" << timer << std::endl;
 
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("GOT ALL THE CLIENTS"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("All clients answered tdt test"));
 		respondedClients = 0;
 	}
 }
-
 bool AUnrealVRCharacter::Server_ReceiveTDTAnswers_Validate()
 {
 	return true;
