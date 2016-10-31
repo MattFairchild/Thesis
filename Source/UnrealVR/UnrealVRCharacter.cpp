@@ -125,19 +125,16 @@ void AUnrealVRCharacter::BeginPlay()
 	if (!spawnfile.is_open())
 	{
 		spawnfile.open(spawnFileName, std::ofstream::out | std::ofstream::app);
-		spawnfile << "Computername;spawn time" << std::endl;
 	}
 
 	if (!rttfile.is_open())
 	{
 		rttfile.open(rttFileName, std::ofstream::out | std::ofstream::app);
-		rttfile << "Computername;RTT time" << std::endl;
 	}
 
 	if (!tdtfile.is_open())
 	{
 		tdtfile.open(tdtFileName, std::ofstream::out | std::ofstream::app);
-		tdtfile << "Computername;TDT time" << std::endl;
 	}
 }
 
