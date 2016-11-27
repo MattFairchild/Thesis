@@ -48,6 +48,9 @@ Binaries/*
 # Builds
 Build/*
 
+# Built Files from Levels
+*_BuiltData.uasset
+
 # Don't ignore icon files in Build
 !Build/**/*.ico
 
