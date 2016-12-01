@@ -71,19 +71,19 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	avatar->SetupAttachment(FirstPersonCameraComponent);
 	
 	//static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/InfinityBladeWarriors/Character/CompleteCharacters/SK_CharM_Robo.SK_CharM_Robo'"));
-	static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/Mannequin/Character/Mesh/SK_Mannequin.SK_Mannequin'"));
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> StaticSkeletonMeshOb(TEXT("SkeletalMesh'/Game/Meshes/Mannequin/Character/Mesh/SK_Mannequin.SK_Mannequin'"));
 	if (StaticSkeletonMeshOb.Succeeded())
 	{
 		avatar->SetSkeletalMesh(StaticSkeletonMeshOb.Object);
 	}
 
 	//set the animation class. this is a blueprint animation class that is converted to Code before setting (via function)
-	static ConstructorHelpers::FObjectFinder<UAnimBlueprintGeneratedClass> TmpMeshAnim(TEXT("AnimBlueprintGeneratedClass'/Game/Mannequin/Animations/ThirdPerson_AnimBP.ThirdPerson_AnimBP_C'"));
+	static ConstructorHelpers::FObjectFinder<UAnimBlueprintGeneratedClass> TmpMeshAnim(TEXT("AnimBlueprintGeneratedClass'/Game/Meshes/Mannequin/Animations/ThirdPerson_AnimBP.ThirdPerson_AnimBP_C'"));
 	if (TmpMeshAnim.Succeeded())
 	{
 		avatar->SetAnimInstanceClass(TmpMeshAnim.Object);
 	}
-	
+
 	avatar->SetOwnerNoSee(true); //set so that owner does not see his own mesh, should only see FPS hands
 	avatar->RelativeLocation = FVector(50.0f, 0.0f, -157.0f);
 	avatar->RelativeRotation = FRotator(0.0f, -90.0f, 0.0f);
