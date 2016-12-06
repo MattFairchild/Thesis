@@ -83,7 +83,7 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	{
 		avatar->SetAnimInstanceClass(TmpMeshAnim.Object);
 	}
-	
+
 	avatar->SetOwnerNoSee(true); //set so that owner does not see his own mesh, should only see FPS hands
 	avatar->RelativeLocation = FVector(50.0f, 0.0f, -157.0f);
 	avatar->RelativeRotation = FRotator(0.0f, -90.0f, 0.0f);
