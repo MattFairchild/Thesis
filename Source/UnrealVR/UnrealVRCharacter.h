@@ -215,6 +215,9 @@ public:
 	UFUNCTION()
 	void ChangeVariableTest();
 
+	UFUNCTION()
+	int32 getTimePassed(FDateTime start, FDateTime end);
+
 	/* REGISTER WHEN NEW PLAYER JOINS */
 	void AddNewPlayer();
 	UFUNCTION(Reliable, Server, WithValidation)
@@ -235,6 +238,8 @@ public:
 	void Client_AnswerTDTTest();
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_ReceiveTDTAnswers();
+	UFUNCTION(Reliable, Client)
+	void Client_LogTDTTime(int32 time);
 
 	UFUNCTION()
 	void ReplicateSpawnTestArrival();

@@ -443,6 +443,22 @@ void AUnrealVRCharacter::SetID(int id)
 	this->ID = id;
 }
 
+int32 AUnrealVRCharacter::getTimePassed(FDateTime start, FDateTime end)
+{
+	int32 result = end.GetMillisecond() - start.GetMillisecond();
+	int32 startSeconds = start.GetSecond(), endSeconds = end.GetSecond();
+
+	if (endSeconds > startSeconds)
+	{
+		int32 diff = endSeconds - startSeconds;
+		return result + (1000 * diff);
+	}
+	else
+	{
+		return result;
+	}
+}
+
 /********************************************************************************/
 /*								RPC calling functions							*/			
 /********************************************************************************/
@@ -592,8 +608,9 @@ void AUnrealVRCharacter::Server_ReceiveTDTAnswers_Implementation()
 	if (respondedClients == numClients)
 	{
 		endTime = FDateTime::UtcNow();
-		timer = endTime.GetMillisecond() - startTime.GetMillisecond();
+		timer = getTimePassed(startTime, endTime);
 		tdtfile << FGenericPlatformProcess::ComputerName() << ";" << timer << std::endl;
+		Client_LogTDTTime(timer);
 
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("All clients answered tdt test"));
 		respondedClients = 0;
@@ -602,6 +619,12 @@ void AUnrealVRCharacter::Server_ReceiveTDTAnswers_Implementation()
 bool AUnrealVRCharacter::Server_ReceiveTDTAnswers_Validate()
 {
 	return true;
+}
+
+void AUnrealVRCharacter::Client_LogTDTTime_Implementation(int32 time)
+{
+	tdtfile << FGenericPlatformProcess::ComputerName() << ";" << time << std::endl;
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("All clients answered tdt test"));
 }
 
 
@@ -792,7 +815,7 @@ bool AUnrealVRCharacter::Server_RTT_Test_Validate(bool log)
 void AUnrealVRCharacter::Client_RTT_Test_Implementation(bool log)
 {
 	endTime = FDateTime::UtcNow();
-	timer = endTime.GetMillisecond() - startTime.GetMillisecond();
+	timer = getTimePassed(startTime, endTime);
 	rttwaiting = false;
 
 	FString str = TEXT("");
@@ -835,7 +858,7 @@ void AUnrealVRCharacter::ReplicateSpawnTestStart()
 void AUnrealVRCharacter::ReplicateSpawnTestArrival()
 {
 	endTime = FDateTime::UtcNow();
-	timer = endTime.GetMillisecond() - startTime.GetMillisecond();
+	timer = getTimePassed(startTime, endTime);
 
 	FString str = TEXT("");
 	str.AppendInt(timer);
@@ -871,7 +894,7 @@ void AUnrealVRCharacter::ReplicateSpawnTestStartWithLog()
 void AUnrealVRCharacter::ReplicateSpawnTestArrivalWithLog()
 {
 	endTime = FDateTime::UtcNow();
-	timer = endTime.GetMillisecond() - startTime.GetMillisecond();
+	timer = getTimePassed(startTime, endTime);
 
 	if (spawnfile.is_open())
 	{

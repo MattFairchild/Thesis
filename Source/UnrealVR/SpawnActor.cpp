@@ -97,7 +97,24 @@ void ASpawnActor::UpdateMaterial()
 		//get the time of arrival here and print IF on client
 		waiting = false;
 		endTime = FDateTime::UtcNow();
-		timer = endTime.GetMillisecond() - startTime.GetMillisecond();
+
+		//make sure time is not negative, but rather accurate also when crossing ms to seconds boundaries
+		{
+			int32 result = endTime.GetMillisecond() - startTime.GetMillisecond();
+			int32 startSeconds = startTime.GetSecond(), endSeconds = endTime.GetSecond();
+
+			if (endSeconds > startSeconds)
+			{
+				int32 diff = endSeconds - startSeconds;
+				timer = result + (1000 * diff);
+			}
+			else
+			{
+				timer = result;
+			}
+		}
+
+
 
 		FString str = TEXT("");
 		str.AppendInt(timer);
