@@ -9,6 +9,11 @@
 #include "CoreMisc.h"
 #include "UnrealVRCharacter.generated.h"
 
+#define ISDEDICATED (GEngine->GetNetMode(GetWorld()) == NM_DedicatedServer)
+#define ISLISTEN (GEngine->GetNetMode(GetWorld()) == NM_ListenServer)
+#define ISSTANDALONE (GEngine->GetNetMode(GetWorld()) == NM_Standalone)
+#define ISCLIENT (GEngine->GetNetMode(GetWorld()) == NM_Client)
+
 class UInputComponent;
 
 UCLASS(config=Game)
@@ -200,11 +205,11 @@ public:
 			FUNCTIONS  AND VARIABLES TO CHECK FOR RTT TDT ETC. AND LOG THEM		
 	
 	*/
-	int32 timer;
-	bool spawnWaiting, rttwaiting;
-	int spawniterations, rttiterations;
-	FDateTime startTime, endTime;
-	std::ofstream spawnfile, rttfile, tdtfile;
+	int32 timer, serverTimer;
+	bool spawnWaiting, rttwaiting, tdtwaiting;
+	int spawniterations, rttiterations, tdtiterations;
+	FDateTime startTime, endTime, serverStartTime, serverEndTime;
+	std::ofstream spawnfile, rttfile, tdtfile, serverSpawnTimeFile;
 
 	UPROPERTY(ReplicatedUsing = ReplicateSpawnTestArrival)
 	ASpawnActor* spawnActorReplicateTest;
@@ -232,8 +237,8 @@ public:
 	void TDTTest();
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_StartTDTTest();
-	UFUNCTION(Reliable, NetMulticast)
-	void Multicast_TDTTest();
+	UFUNCTION(Reliable, Client)
+	void Client_StartTDTTest();
 	UFUNCTION(Reliable, Client)
 	void Client_AnswerTDTTest();
 	UFUNCTION(Reliable, Server, WithValidation)
@@ -247,6 +252,8 @@ public:
 	void ReplicateSpawnTestStart();
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_Replication_SpawnTest(FVector location);
+	UFUNCTION(Client, Reliable)
+	void Client_LogServerTime(int32 time);
 
 	UFUNCTION()
 	void ReplicateSpawnTestArrivalWithLog();
@@ -259,7 +266,7 @@ public:
 	void RTT_Test();
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_RTT_Test(bool log = false);
-	UFUNCTION(Client, Unreliable)
+	UFUNCTION(Client, Reliable)
 	void Client_RTT_Test(bool log);
 
 	UFUNCTION()

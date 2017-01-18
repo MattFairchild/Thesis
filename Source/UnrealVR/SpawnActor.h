@@ -29,11 +29,11 @@ private:
 
 	UPROPERTY(Replicated)
 	bool waiting;
-	int32 timer;
-	FDateTime startTime, endTime;
+	int32 timer, serverTimer;
+	FDateTime startTime, endTime, serverStartTime, serverEndTime;
 
-	std::ofstream colorchangefile;
-	std::string filename;
+	std::ofstream colorchangefile, serverTimeVariableChangeFile;
+	std::string filename, serverFileName;
 public:
 	int32 rounds;
 
@@ -56,8 +56,12 @@ public:
 
 	void SetIsInHand(bool newVal);
 
+	int32 getTimePassed(FDateTime start, FDateTime end);
+
 	UFUNCTION(Reliable, Server, WithValidation)
 	void Server_SwitchColors();
+	UFUNCTION(Client, Reliable)
+	void Client_LogServerTime(int32 time);
 
 	//function to set all the replicated variables into
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;

@@ -53,6 +53,7 @@ ASpawnActor::ASpawnActor()
 	FString pcName = FPlatformMisc::GameDir();
 	std::string pathPrelim = TCHAR_TO_UTF8(*pcName);
 	filename = pathPrelim + "VariableChange.csv";
+	serverFileName = pathPrelim + "VariableChangeServerTime.csv";
 
 	UpdateMaterial();
 }
@@ -63,6 +64,12 @@ ASpawnActor::~ASpawnActor()
 	{
 		colorchangefile.close();
 	}
+
+	if (serverTimeVariableChangeFile.is_open())
+	{
+		serverTimeVariableChangeFile.close();
+	}
+	
 }
 
 // Called when the game starts or when spawned
@@ -184,8 +191,10 @@ bool ASpawnActor::IsInHand() const
 
 void ASpawnActor::Server_SwitchColors_Implementation()
 {
+	serverStartTime = FDateTime::UtcNow();
 	currentMat = (currentMat + 1) % mats.Num();
-
+	serverEndTime = FDateTime::UtcNow();
+	Client_LogServerTime(getTimePassed(serverStartTime, serverEndTime));
 	//needs to be called manually,since in C++ the server does not call the RepNotify function automatically. CLIENTS DO, but not the server itself
 	UpdateMaterial();
 }
@@ -193,4 +202,33 @@ void ASpawnActor::Server_SwitchColors_Implementation()
 bool ASpawnActor::Server_SwitchColors_Validate()
 {
 	return true;
+}
+void ASpawnActor::Client_LogServerTime_Implementation(int32 time)
+{
+	if (!serverTimeVariableChangeFile.is_open())
+	{
+		serverTimeVariableChangeFile.open(serverFileName, std::ofstream::out | std::ofstream::app);
+	}
+
+	serverTimeVariableChangeFile << "Servertime;" << time << std::endl;
+
+	if (serverTimeVariableChangeFile.is_open())
+	{
+		serverTimeVariableChangeFile.close();
+	}
+}
+int32 ASpawnActor::getTimePassed(FDateTime start, FDateTime end)
+{
+	int32 result = end.GetMillisecond() - start.GetMillisecond();
+	int32 startSeconds = start.GetSecond(), endSeconds = end.GetSecond();
+
+	if (endSeconds > startSeconds)
+	{
+		int32 diff = endSeconds - startSeconds;
+		return result + (1000 * diff);
+	}
+	else
+	{
+		return result;
+	}
 }

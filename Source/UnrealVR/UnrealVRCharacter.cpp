@@ -103,11 +103,14 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 
 	spawnWaiting = false;
 	rttwaiting = false;
+	tdtwaiting = false;
 	spawniterations = 1;
 	rttiterations = 1;
 
 	numClients = 0;
 	respondedClients = 0;
+
+	tdtiterations = 100;
 }
 
 void AUnrealVRCharacter::BeginPlay()
@@ -121,6 +124,7 @@ void AUnrealVRCharacter::BeginPlay()
 	std::string spawnFileName = pathPrelim + "Spawntimes.csv";
 	std::string rttFileName = pathPrelim + "RTTtimes.csv";
 	std::string tdtFileName = pathPrelim + "TDTtimes.csv";
+	std::string serverSpawnTimeName = pathPrelim + "ServerSpawnTimes.csv";
 
 	if (!spawnfile.is_open())
 	{
@@ -135,6 +139,11 @@ void AUnrealVRCharacter::BeginPlay()
 	if (!tdtfile.is_open())
 	{
 		tdtfile.open(tdtFileName, std::ofstream::out | std::ofstream::app);
+	}
+
+	if (!serverSpawnTimeFile.is_open())
+	{
+		serverSpawnTimeFile.open(serverSpawnTimeName, std::ofstream::out | std::ofstream::app);
 	}
 }
 
@@ -155,6 +164,11 @@ void AUnrealVRCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (tdtfile.is_open())
 	{
 		tdtfile.close();
+	}
+
+	if (serverSpawnTimeFile.is_open())
+	{
+		serverSpawnTimeFile.close();
 	}
 }
 
@@ -576,25 +590,35 @@ bool AUnrealVRCharacter::Server_RemoveDisconnectedPlayer_Validate()
 
 void AUnrealVRCharacter::TDTTest()
 {
+	if (ISCLIENT)
+	{
+		Server_StartTDTTest();
+	}
+	else
+	{
+		Client_StartTDTTest();
+	}
+}
+
+void AUnrealVRCharacter::Client_StartTDTTest_Implementation()
+{
 	Server_StartTDTTest();
 }
 
 void AUnrealVRCharacter::Server_StartTDTTest_Implementation()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("Starting TDT Test"));
-	startTime = FDateTime::UtcNow();
-	Multicast_TDTTest();
+	if (!tdtwaiting)
+	{
+		tdtwaiting = true;
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("Starting TDT Test"));
+		startTime = FDateTime::UtcNow();
+		Client_AnswerTDTTest();
+	}
 }
 bool AUnrealVRCharacter::Server_StartTDTTest_Validate()
 {
 	return true;
 }
-
-void AUnrealVRCharacter::Multicast_TDTTest_Implementation()
-{
-	Client_AnswerTDTTest();
-}
-
 
 void AUnrealVRCharacter::Client_AnswerTDTTest_Implementation()
 {
@@ -603,18 +627,31 @@ void AUnrealVRCharacter::Client_AnswerTDTTest_Implementation()
 
 void AUnrealVRCharacter::Server_ReceiveTDTAnswers_Implementation()
 {
-	respondedClients++;
-
-	if (respondedClients == numClients)
+	if (tdtwaiting)
 	{
-		endTime = FDateTime::UtcNow();
-		timer = getTimePassed(startTime, endTime);
-		tdtfile << FGenericPlatformProcess::ComputerName() << ";" << timer << std::endl;
-		Client_LogTDTTime(timer);
+		respondedClients++;
 
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("All clients answered tdt test"));
-		respondedClients = 0;
+		if (respondedClients == numClients)
+		{
+			tdtwaiting = false;
+			endTime = FDateTime::UtcNow();
+			timer = getTimePassed(startTime, endTime);
+			tdtfile << FGenericPlatformProcess::ComputerName() << ";" << timer << std::endl;
+			Client_LogTDTTime(timer);
+
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("All clients answered tdt test => server function"));
+			respondedClients = 0;
+
+			////////////////////////////
+			tdtiterations--;
+			if (tdtiterations > 0)
+			{
+				Client_StartTDTTest();
+			}
+			////////////////////////////
+		}
 	}
+
 }
 bool AUnrealVRCharacter::Server_ReceiveTDTAnswers_Validate()
 {
@@ -624,7 +661,7 @@ bool AUnrealVRCharacter::Server_ReceiveTDTAnswers_Validate()
 void AUnrealVRCharacter::Client_LogTDTTime_Implementation(int32 time)
 {
 	tdtfile << FGenericPlatformProcess::ComputerName() << ";" << time << std::endl;
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("All clients answered tdt test"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, TEXT("All clients answered tdt test => client function"));
 }
 
 
@@ -833,11 +870,8 @@ void AUnrealVRCharacter::Client_RTT_Test_Implementation(bool log)
 		{
 			startTime = FDateTime::UtcNow();
 
-			if (!rttwaiting)
-			{
-				rttwaiting = true;
-				Server_RTT_Test(true);
-			}
+			rttwaiting = true;
+			Server_RTT_Test(true);
 		}
 	}
 }
@@ -869,10 +903,12 @@ void AUnrealVRCharacter::ReplicateSpawnTestArrival()
 
 void AUnrealVRCharacter::Server_Replication_SpawnTest_Implementation(FVector location)
 {
-	ASpawnActor* actor = GetWorld()->SpawnActor <ASpawnActor>(spawn, location, GetActorRotation());
-	actor->SetRandomColor();
+	serverStartTime = FDateTime::UtcNow();
 
+	ASpawnActor* actor = GetWorld()->SpawnActor <ASpawnActor>(spawn, location, GetActorRotation());
 	spawnActorReplicateTest = actor;
+
+	serverEndTime = FDateTime::UtcNow();
 }
 
 
@@ -882,7 +918,12 @@ bool AUnrealVRCharacter::Server_Replication_SpawnTest_Validate(FVector location)
 }
 
 
-
+//called when pressing 8
+void AUnrealVRCharacter::LogSpawn()
+{
+	spawniterations = 300;
+	ReplicateSpawnTestStartWithLog();
+}
 void AUnrealVRCharacter::ReplicateSpawnTestStartWithLog()
 {
 	if (updateRaycastHit())
@@ -891,10 +932,33 @@ void AUnrealVRCharacter::ReplicateSpawnTestStartWithLog()
 		Server_Replication_SpawnTestWithLog(hit.Location); //RANDOM LOCATION BETTER ?
 	}
 }
+void AUnrealVRCharacter::Server_Replication_SpawnTestWithLog_Implementation(FVector location)
+{
+	serverStartTime = FDateTime::UtcNow();
+
+	ASpawnActor* actor = GetWorld()->SpawnActor <ASpawnActor>(spawn, location, GetActorRotation());
+	spawnActorReplicateTestWithLog = actor;
+
+	serverEndTime = FDateTime::UtcNow();
+
+	Client_LogServerTime(getTimePassed(serverStartTime, serverEndTime));
+}
+bool AUnrealVRCharacter::Server_Replication_SpawnTestWithLog_Validate(FVector location)
+{
+	return true;
+}
+void AUnrealVRCharacter::Client_LogServerTime_Implementation(int32 time)
+{
+	if (serverSpawnTimeFile.is_open())
+	{
+		serverSpawnTimeFile << "Spawningtime;" << time << std::endl;
+	}
+}
 void AUnrealVRCharacter::ReplicateSpawnTestArrivalWithLog()
 {
 	endTime = FDateTime::UtcNow();
 	timer = getTimePassed(startTime, endTime);
+	serverTimer = getTimePassed(serverStartTime, serverEndTime);
 
 	if (spawnfile.is_open())
 	{
@@ -914,17 +978,6 @@ void AUnrealVRCharacter::ReplicateSpawnTestArrivalWithLog()
 		ReplicateSpawnTestStartWithLog();
 	}
 }
-void AUnrealVRCharacter::Server_Replication_SpawnTestWithLog_Implementation(FVector location)
-{
-	ASpawnActor* actor = GetWorld()->SpawnActor <ASpawnActor>(spawn, location, GetActorRotation());
-	actor->SetRandomColor();
-
-	spawnActorReplicateTestWithLog = actor;
-}
-bool AUnrealVRCharacter::Server_Replication_SpawnTestWithLog_Validate(FVector location)
-{
-	return true;
-}
 
 
 
@@ -934,16 +987,12 @@ bool AUnrealVRCharacter::Server_Replication_SpawnTestWithLog_Validate(FVector lo
 
 void AUnrealVRCharacter::LogRTT()
 {
-	rttiterations = 100;
+	rttiterations = 300;
 	Server_RTT_Test(true);
 }
 
 
-void AUnrealVRCharacter::LogSpawn()
-{
-	spawniterations = 100;
-	ReplicateSpawnTestStartWithLog();
-}
+
 
 
 
@@ -954,7 +1003,7 @@ void AUnrealVRCharacter::ChangeVariableTest()
 	if (inHand)
 	{
 		inHand->StartTimer();
-		inHand->rounds = 100;
+		inHand->rounds = 300;
 		Server_ChangeInHandColor(inHand);
 	}
 
