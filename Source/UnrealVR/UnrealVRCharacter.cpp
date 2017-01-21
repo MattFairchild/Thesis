@@ -110,7 +110,7 @@ AUnrealVRCharacter::AUnrealVRCharacter() : hit(ForceInit)
 	numClients = 0;
 	respondedClients = 0;
 
-	tdtiterations = 100;
+	tdtiterations = 200;
 }
 
 void AUnrealVRCharacter::BeginPlay()
@@ -648,6 +648,10 @@ void AUnrealVRCharacter::Server_ReceiveTDTAnswers_Implementation()
 			{
 				Client_StartTDTTest();
 			}
+			else
+			{
+				tdtiterations = 200;
+			}
 			////////////////////////////
 		}
 	}
@@ -1006,5 +1010,4 @@ void AUnrealVRCharacter::ChangeVariableTest()
 		inHand->rounds = 300;
 		Server_ChangeInHandColor(inHand);
 	}
-
 }
